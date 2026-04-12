@@ -1,0 +1,167 @@
+@import "tailwindcss";
+
+/* ─── Scan core + markets-grid packages for Tailwind classes ─────────────── */
+@source "../../../packages/core/src/**/*.{ts,tsx}";
+@source "../../../packages/markets-grid/src/**/*.{ts,tsx}";
+
+/* ─── FI Trading Terminal Design System ──────────────────────────────────── */
+/* Tokens from /Users/develop/projects/fi-trading-terminal/design-system      */
+
+@theme inline {
+  /* Shadcn semantic colors */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Radius */
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 2px);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  /* FI accent palette */
+  --color-teal-400: #2dd4bf;
+  --color-teal-500: #14b8a6;
+  --color-teal-600: #0d9488;
+  --color-amber-500: #f0b90b;
+  --color-amber-600: #d97706;
+  --color-blue-400: #3da0ff;
+  --color-cyan-400: #22d3ee;
+  --color-red-400: #f87171;
+  --color-red-600: #dc2626;
+  --color-purple-400: #c084fc;
+  --color-yellow-400: #fbbf24;
+  --color-yellow-500: #f0b90b;
+}
+
+:root {
+  /* ── Surface layers ── */
+  --background: #0b0e11;     /* ground */
+  --foreground: #eaecef;     /* text.primary */
+  --card: #161a1e;           /* surface.primary */
+  --card-foreground: #eaecef;
+  --popover: #161a1e;
+  --popover-foreground: #eaecef;
+
+  /* ── Brand / Primary (amber) ── */
+  --primary: #f0b90b;
+  --primary-foreground: #0b0e11;
+
+  /* ── Secondary (surface.secondary) ── */
+  --secondary: #1e2329;
+  --secondary-foreground: #a0a8b4;
+
+  /* ── Muted ── */
+  --muted: #2b3139;          /* surface.tertiary */
+  --muted-foreground: #7a8494; /* text.muted */
+
+  /* ── Accent ── */
+  --accent: #2b3139;
+  --accent-foreground: #eaecef;
+
+  /* ── Destructive ── */
+  --destructive: #f87171;
+  --destructive-foreground: #ffffff;
+
+  /* ── Borders ── */
+  --border: #313944;         /* border.primary */
+  --input: #3e4754;          /* border.secondary */
+  --ring: #f0b90b;
+
+  /* ── Radius ── */
+  --radius: 4px;
+
+  /* ── FI surface aliases ── */
+  --bn-bg: #0b0e11;
+  --bn-bg1: #161a1e;
+  --bn-bg2: #1e2329;
+  --bn-bg3: #2b3139;
+  --bn-t0: #eaecef;
+  --bn-t1: #a0a8b4;
+  --bn-t2: #7a8494;
+  --bn-t3: #4a5568;
+  --bn-border: #313944;
+  --bn-border2: #3e4754;
+  --bn-green: #2dd4bf;
+  --bn-red: #f87171;
+  --bn-yellow: #f0b90b;
+  --bn-blue: #3da0ff;
+  --bn-cyan: #22d3ee;
+
+  /* ── Typography ── */
+  --fi-mono: 'JetBrains Mono', monospace;
+  --fi-sans: 'Geist', sans-serif;
+  --fi-font-xs: 9px;
+  --fi-font-sm: 11px;
+  --fi-font-md: 13px;
+  --fi-font-lg: 18px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body, #root { height: 100%; width: 100%; }
+body {
+  font-family: var(--fi-sans), -apple-system, sans-serif;
+  background: var(--background);
+  color: var(--foreground);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─── AG-Grid: collapse header buttons until hover ───────────────────────── */
+
+/* Header menu button (hamburger icon) */
+.ag-header-cell-menu-button,
+.ag-header-cell-filter-button {
+  width: 0;
+  min-width: 0;
+  overflow: hidden;
+  opacity: 0;
+  padding: 0;
+  margin: 0;
+  transition: width 150ms ease, opacity 150ms ease, padding 150ms ease, margin 150ms ease;
+}
+
+.ag-header-cell:hover .ag-header-cell-menu-button,
+.ag-header-cell:hover .ag-header-cell-filter-button {
+  width: auto;
+  min-width: revert;
+  overflow: visible;
+  opacity: 1;
+  padding: revert;
+  margin: revert;
+}
+
+/* Floating filter button (funnel icon in filter row) */
+.ag-floating-filter-button {
+  width: 0;
+  min-width: 0;
+  overflow: hidden;
+  opacity: 0;
+  padding: 0;
+  margin: 0;
+  transition: width 150ms ease, opacity 150ms ease, padding 150ms ease, margin 150ms ease;
+}
+
+.ag-floating-filter:hover .ag-floating-filter-button {
+  width: auto;
+  min-width: revert;
+  overflow: visible;
+  opacity: 1;
+  padding: revert;
+  margin: revert;
+}

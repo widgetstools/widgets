@@ -1,0 +1,25 @@
+{
+  "name": "@grid-customizer/monorepo",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w apps/demo",
+    "build": "npm run build -w packages/core && npm run build -w packages/markets-grid",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^1.8.0",
+    "tailwind-merge": "^3.5.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.59.1",
+    "@tailwindcss/vite": "^4.2.2",
+    "tailwindcss": "^4.2.2"
+  }
+}
