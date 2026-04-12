@@ -160,6 +160,35 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* ─── Toolbar button theme styles ────────────────────────────────────────── */
+
+.gc-tbtn {
+  color: var(--muted-foreground);
+}
+.gc-tbtn:hover {
+  color: var(--foreground);
+  background: var(--accent);
+}
+.gc-tbtn-active {
+  background: color-mix(in srgb, var(--primary) 12%, transparent);
+  color: var(--primary);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary) 25%, transparent);
+}
+.gc-tbtn-active:hover {
+  background: color-mix(in srgb, var(--primary) 18%, transparent);
+}
+.gc-toolbar-sep {
+  width: 1px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+.gc-toolbar-group-bg {
+  background: color-mix(in srgb, var(--card) 60%, transparent);
+}
+.gc-tbtn-confirm {
+  color: var(--bn-green, #2dd4bf) !important;
+}
+
 /* ─── AG-Grid: collapse header buttons until hover ───────────────────────── */
 
 /* Header menu button (hamburger icon) */

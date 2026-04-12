@@ -42,7 +42,7 @@ function getDecimalsFromExpr(expr: string | undefined): number | null {
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
-/** Toolbar icon button — refined with subtle hover lift */
+/** Toolbar icon button — theme-aware via CSS variables */
 function TBtn({ children, active, disabled, tooltip, onClick, className }: {
   children: React.ReactNode; active?: boolean; disabled?: boolean;
   tooltip?: string; onClick?: () => void; className?: string;
@@ -53,8 +53,8 @@ function TBtn({ children, active, disabled, tooltip, onClick, className }: {
       size="icon-sm"
       disabled={disabled}
       className={cn(
-        'shrink-0 rounded-[3px] text-[#a0a8b4] hover:text-[#ffffff] hover:bg-[#2b3139] transition-all duration-150',
-        active && 'bg-[#f0b90b]/12 text-[#f0b90b] hover:bg-[#f0b90b]/18 hover:text-[#fcd34d] ring-1 ring-[#f0b90b]/25',
+        'shrink-0 rounded-[3px] transition-all duration-150 gc-tbtn',
+        active && 'gc-tbtn-active',
         disabled && 'opacity-25 pointer-events-none',
         className,
       )}
@@ -77,7 +77,8 @@ function TBtn({ children, active, disabled, tooltip, onClick, className }: {
 /** Toolbar group — clusters related tools with a subtle background */
 function TGroup({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={cn('flex items-center gap-[2px] px-[3px] py-[2px] rounded-[4px] bg-[#161a1e]/60', className)}>
+    <div className={cn('flex items-center gap-[2px] px-[3px] py-[2px] rounded-[4px]', className)}
+      style={{ background: 'color-mix(in srgb, var(--card) 60%, transparent)' }}>
       {children}
     </div>
   );
@@ -559,37 +560,39 @@ export function FormattingToolbar({ core, store }: FormattingToolbarProps) {
       </TGroup>
 
       {/* ── Column context ── */}
-      <div className="flex items-center gap-1 px-2 py-1 rounded-[4px] bg-[#161a1e]/60 shrink-0">
+      <div className="flex items-center gap-1 px-2 py-1 rounded-[4px] shrink-0"
+        style={{ background: 'color-mix(in srgb, var(--card) 60%, transparent)' }}>
         <span
-          className={cn(
-            'text-[10px] font-mono tracking-wider max-w-[110px] overflow-hidden text-ellipsis whitespace-nowrap select-none transition-colors',
-            colIds.length > 0 ? 'text-[#eaecef]' : 'text-[#7a8494]',
-          )}
+          className="text-[10px] font-mono tracking-wider max-w-[110px] overflow-hidden text-ellipsis whitespace-nowrap select-none transition-colors"
+          style={{ color: colIds.length > 0 ? 'var(--foreground)' : 'var(--muted-foreground)' }}
           title={colIds.join(', ')}
         >
           {colLabel}
         </span>
         <button
-          className={cn(
-            'flex items-center gap-[3px] px-1.5 py-[2px] rounded-[3px] text-[8px] font-mono font-bold tracking-[0.08em] uppercase transition-all duration-150 cursor-pointer',
-            target === 'header'
-              ? 'bg-[#f0b90b]/15 text-[#f0b90b] ring-1 ring-[#f0b90b]/25'
-              : 'bg-[#2b3139]/80 text-[#a0a8b4] hover:text-[#eaecef] hover:bg-[#2b3139]',
-          )}
+          className="flex items-center gap-[3px] px-1.5 py-[2px] rounded-[3px] text-[8px] font-mono font-bold tracking-[0.08em] uppercase transition-all duration-150 cursor-pointer"
+          style={target === 'header' ? {
+            background: 'color-mix(in srgb, var(--primary) 15%, transparent)',
+            color: 'var(--primary)',
+            boxShadow: 'inset 0 0 0 1px color-mix(in srgb, var(--primary) 25%, transparent)',
+          } : {
+            background: 'var(--accent)',
+            color: 'var(--muted-foreground)',
+          }}
           onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); setTarget(target === 'cell' ? 'header' : 'cell'); }}
         >
           {target === 'cell' ? 'CELL' : 'HDR'}
         </button>
       </div>
 
-      <div className="w-px h-5 bg-[#1e2329] shrink-0" />
+      <div className="gc-toolbar-sep h-5" />
 
       {/* ── Number Format ── */}
       <TGroup>
         <Popover
           trigger={
             <Button variant="ghost" size="icon-sm" disabled={disabled}
-              className={cn('shrink-0 rounded-[3px] text-[#a0a8b4] hover:text-[#ffffff] hover:bg-[#2b3139] transition-all duration-150', disabled && 'opacity-25 pointer-events-none')}
+              className={cn('shrink-0 rounded-[3px] gc-tbtn transition-all duration-150', disabled && 'opacity-25 pointer-events-none')}
               onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }}>
               <DollarSign size={13} strokeWidth={1.5} />
             </Button>
@@ -599,11 +602,12 @@ export function FormattingToolbar({ core, store }: FormattingToolbarProps) {
             {Object.entries(FORMATTERS).filter(([k]) => ['USD', 'EUR', 'GBP', 'JPY'].includes(k)).map(([key, f]) => (
               <button
                 key={key}
-                className="flex items-center gap-2.5 w-full px-2.5 py-1.5 rounded-[3px] text-[11px] text-[#eaecef] hover:bg-[#2b3139] cursor-pointer transition-colors"
+                className="flex items-center gap-2.5 w-full px-2.5 py-1.5 rounded-[3px] text-[11px] hover:bg-accent cursor-pointer transition-colors"
+                style={{ color: 'var(--foreground)' }}
                 onClick={() => doFormat(f.expr)}
                 onMouseDown={(e) => e.preventDefault()}
               >
-                <span className="font-mono font-semibold w-4 text-[#7a8494]">{f.label}</span>
+                <span className="font-mono font-semibold w-4" style={{ color: 'var(--muted-foreground)' }}>{f.label}</span>
                 <span>{key}</span>
               </button>
             ))}
@@ -619,7 +623,7 @@ export function FormattingToolbar({ core, store }: FormattingToolbarProps) {
           onClick={() => doFormat(fmt.valueFormatter?.includes('maximumFractionDigits:0') ? undefined : FORMATTERS.COMMA.expr)}>
           <Hash size={12} strokeWidth={1.5} />
         </TBtn>
-        <div className="w-px h-4 bg-[#2b3139]/50" />
+        <div className="gc-toolbar-sep h-4 opacity-50" />
         <TBtn disabled={disabled} tooltip="Fewer decimals" onClick={decreaseDecimals}>
           <span className="flex items-center gap-px text-[9px] font-mono"><ArrowLeft size={9} strokeWidth={2} />.0</span>
         </TBtn>
@@ -628,7 +632,7 @@ export function FormattingToolbar({ core, store }: FormattingToolbarProps) {
         </TBtn>
       </TGroup>
 
-      <div className="w-px h-5 bg-[#1e2329] shrink-0" />
+      <div className="gc-toolbar-sep h-5" />
 
       {/* ── Typography ── */}
       <TGroup>
@@ -654,14 +658,14 @@ export function FormattingToolbar({ core, store }: FormattingToolbarProps) {
           }}>
           <Underline size={13} strokeWidth={1.5} />
         </TBtn>
-        <div className="w-px h-4 bg-[#2b3139]/50" />
+        <div className="gc-toolbar-sep h-4 opacity-50" />
         <ColorPickerPopover disabled={disabled} value={fmt.color} icon={<Type size={11} strokeWidth={2} />}
           onChange={(c) => doStyle({ color: c })} compact />
         <ColorPickerPopover disabled={disabled} value={fmt.backgroundColor} icon={<PaintBucket size={11} strokeWidth={1.5} />}
           onChange={(c) => doStyle({ backgroundColor: c })} compact />
       </TGroup>
 
-      <div className="w-px h-5 bg-[#1e2329] shrink-0" />
+      <div className="gc-toolbar-sep h-5" />
 
       {/* ── Alignment ── */}
       <TGroup>
@@ -679,14 +683,14 @@ export function FormattingToolbar({ core, store }: FormattingToolbarProps) {
         </TBtn>
       </TGroup>
 
-      <div className="w-px h-5 bg-[#1e2329] shrink-0" />
+      <div className="gc-toolbar-sep h-5" />
 
       {/* ── Font Size ── */}
       <Popover
         trigger={
           <button disabled={disabled}
             className={cn(
-              'flex items-center gap-1 px-2 py-[3px] rounded-[4px] bg-[#161a1e]/60 text-[10px] font-mono text-[#a0a8b4] hover:text-[#ffffff] hover:bg-[#2b3139]/80 transition-all duration-150 cursor-pointer',
+              'flex items-center gap-1 px-2 py-[3px] rounded-[4px] text-[10px] font-mono transition-all duration-150 cursor-pointer gc-toolbar-group-bg gc-tbtn',
               disabled && 'opacity-20 pointer-events-none',
             )}
             onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }}>
@@ -699,10 +703,8 @@ export function FormattingToolbar({ core, store }: FormattingToolbarProps) {
           {['9px', '10px', '11px', '12px', '13px', '14px', '16px', '18px', '20px', '24px'].map((sz) => (
             <button
               key={sz}
-              className={cn(
-                'flex items-center w-full px-2.5 py-1 rounded-[3px] text-[11px] font-mono hover:bg-[#2b3139] cursor-pointer transition-colors',
-                fmt.fontSize === sz ? 'text-[#f0b90b]' : 'text-[#eaecef]',
-              )}
+              className="flex items-center w-full px-2.5 py-1 rounded-[3px] text-[11px] font-mono hover:bg-accent cursor-pointer transition-colors"
+              style={{ color: fmt.fontSize === sz ? 'var(--primary)' : 'var(--foreground)' }}
               onClick={() => doStyle({ fontSize: sz })}
               onMouseDown={(e) => e.preventDefault()}
             >
@@ -716,7 +718,7 @@ export function FormattingToolbar({ core, store }: FormattingToolbarProps) {
       <Popover
         trigger={
           <Button variant="ghost" size="icon-sm" disabled={disabled}
-            className={cn('shrink-0 rounded-[3px] text-[#a0a8b4] hover:text-[#ffffff] hover:bg-[#2b3139] transition-all duration-150', disabled && 'opacity-25 pointer-events-none')}
+            className={cn('shrink-0 rounded-[3px] gc-tbtn transition-all duration-150', disabled && 'opacity-25 pointer-events-none')}
             onMouseDown={(e) => { e.preventDefault(); }}>
             <Grid3X3 size={13} strokeWidth={1.5} />
           </Button>
@@ -890,9 +892,9 @@ export function FormattingToolbar({ core, store }: FormattingToolbarProps) {
             });
           } catch { /* */ }
           flashClear();
-        }} className={clearConfirmed ? '!text-[#2dd4bf]' : undefined}>
+        }} className={clearConfirmed ? 'gc-tbtn-confirm' : undefined}>
           {clearConfirmed
-            ? <Check size={13} strokeWidth={2.5} className="text-[#2dd4bf]" />
+            ? <Check size={13} strokeWidth={2.5} style={{ color: 'var(--bn-green, #2dd4bf)' }} />
             : <Trash2 size={12} strokeWidth={1.5} />
           }
         </TBtn>
@@ -904,9 +906,9 @@ export function FormattingToolbar({ core, store }: FormattingToolbarProps) {
             store.setState({ undoStack: [], redoStack: [] });
           } catch { /* */ }
           flashSave();
-        }} className={saveConfirmed ? '!text-[#2dd4bf]' : undefined}>
+        }} className={saveConfirmed ? 'gc-tbtn-confirm' : undefined}>
           {saveConfirmed
-            ? <Check size={13} strokeWidth={2.5} className="text-[#2dd4bf]" />
+            ? <Check size={13} strokeWidth={2.5} style={{ color: 'var(--bn-green, #2dd4bf)' }} />
             : <Save size={12} strokeWidth={1.5} />
           }
         </TBtn>
