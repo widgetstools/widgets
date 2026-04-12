@@ -539,8 +539,8 @@ export function FormattingToolbar({ core, store }: FormattingToolbarProps) {
 
   return (
     <div
-      className="flex items-center gap-1.5 h-[38px] px-2.5 shrink-0 border-b border-[#1e2329] text-xs relative z-[10000]"
-      style={{ background: 'linear-gradient(180deg, #131720 0%, #0f1318 100%)' }}
+      className="flex items-center gap-1.5 h-[38px] px-2.5 shrink-0 border-b text-xs relative z-[10000]"
+      style={{ background: 'var(--card, #161a1e)', borderColor: 'var(--border, #1e2329)' }}
       onMouseDown={(e) => {
         const tag = (e.target as HTMLElement).tagName;
         if (tag !== 'SELECT' && tag !== 'INPUT' && tag !== 'OPTION') e.preventDefault();

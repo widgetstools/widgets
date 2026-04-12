@@ -113,6 +113,44 @@
   --fi-font-lg: 18px;
 }
 
+/* ─── Light Theme ────────────────────────────────────────────────────────── */
+[data-theme="light"] {
+  --background: #f8f8f8;
+  --foreground: #3b3b3b;
+  --card: #ffffff;
+  --card-foreground: #3b3b3b;
+  --popover: #ffffff;
+  --popover-foreground: #3b3b3b;
+  --primary: #d97706;
+  --primary-foreground: #ffffff;
+  --secondary: #f3f3f3;
+  --secondary-foreground: #616161;
+  --muted: #f3f3f3;
+  --muted-foreground: #767676;
+  --accent: #f3f3f3;
+  --accent-foreground: #3b3b3b;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  --border: #e5e5e5;
+  --input: #d4d4d4;
+  --ring: #d97706;
+  --bn-bg: #f8f8f8;
+  --bn-bg1: #ffffff;
+  --bn-bg2: #f3f3f3;
+  --bn-bg3: #e8e8e8;
+  --bn-t0: #3b3b3b;
+  --bn-t1: #616161;
+  --bn-t2: #767676;
+  --bn-t3: #a0a0a0;
+  --bn-border: #e5e5e5;
+  --bn-border2: #d4d4d4;
+  --bn-green: #0d9488;
+  --bn-red: #dc2626;
+  --bn-yellow: #d97706;
+  --bn-blue: #2563eb;
+  --bn-cyan: #0891b2;
+}
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body, #root { height: 100%; width: 100%; }
 body {

@@ -1,20 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { ColDef } from 'ag-grid-community';
 import { themeQuartz } from 'ag-grid-community';
 import { MarketsGrid } from '@grid-customizer/markets-grid';
+import { Sun, Moon } from 'lucide-react';
 
 import { generateOrders, type Order } from './data';
 
-// ─── Theme ───────────────────────────────────────────────────────────────────
+// ─── AG-Grid Themes ─────────────────────────────────────────────────────────
 
-const darkTheme = themeQuartz.withParams({
-  backgroundColor: '#161a1e',
-  foregroundColor: '#eaecef',
-  headerBackgroundColor: '#1e2329',
-  oddRowBackgroundColor: '#161a1e',
-  rowHoverColor: '#1e2329',
-  selectedRowBackgroundColor: '#f0b90b14',
-  borderColor: '#313944',
+const sharedParams = {
   fontFamily: "'JetBrains Mono', Menlo, monospace",
   fontSize: 11,
   headerFontSize: 10,
@@ -24,6 +18,28 @@ const darkTheme = themeQuartz.withParams({
   spacing: 6,
   borderRadius: 0,
   wrapperBorderRadius: 0,
+};
+
+const darkTheme = themeQuartz.withParams({
+  ...sharedParams,
+  backgroundColor: '#161a1e',
+  foregroundColor: '#eaecef',
+  headerBackgroundColor: '#1e2329',
+  oddRowBackgroundColor: '#161a1e',
+  rowHoverColor: '#1e2329',
+  selectedRowBackgroundColor: '#f0b90b14',
+  borderColor: '#313944',
+});
+
+const lightTheme = themeQuartz.withParams({
+  ...sharedParams,
+  backgroundColor: '#ffffff',
+  foregroundColor: '#3b3b3b',
+  headerBackgroundColor: '#f3f3f3',
+  oddRowBackgroundColor: '#ffffff',
+  rowHoverColor: '#f3f3f3',
+  selectedRowBackgroundColor: '#d9770614',
+  borderColor: '#e5e5e5',
 });
 
 // ─── Column Definitions (plain — no renderers, no formatters, no styles) ─────
@@ -53,21 +69,53 @@ const columnDefs: ColDef<Order>[] = [
 
 export function App() {
   const [rowData] = useState(() => generateOrders(500));
+  const [isDark, setIsDark] = useState(() => {
+    try { return localStorage.getItem('gc-theme') !== 'light'; }
+    catch { return true; }
+  });
+
+  // Apply data-theme attribute to root and persist preference
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+    try { localStorage.setItem('gc-theme', isDark ? 'dark' : 'light'); }
+    catch { /* */ }
+  }, [isDark]);
+
+  const theme = isDark ? darkTheme : lightTheme;
 
   return (
-    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#0b0e11' }}>
+    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--background)' }}>
       <header style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '8px 16px', borderBottom: '1px solid #313944', background: '#161a1e',
+        padding: '8px 16px', borderBottom: '1px solid var(--border)', background: 'var(--card)',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{ fontSize: 13, fontWeight: 600, fontFamily: "'Geist', sans-serif" }}>
-            <span style={{ color: '#2dd4bf' }}>Markets</span>
-            <span style={{ color: '#eaecef' }}>Grid</span>
+            <span style={{ color: isDark ? '#2dd4bf' : '#0d9488' }}>Markets</span>
+            <span style={{ color: 'var(--foreground)' }}>Grid</span>
           </div>
-          <span style={{ fontSize: 9, padding: '2px 6px', borderRadius: 4, background: 'rgba(45,212,191,0.10)', color: '#2dd4bf', fontFamily: '"JetBrains Mono", monospace', fontWeight: 500 }}>v0.1.0</span>
+          <span style={{ fontSize: 9, padding: '2px 6px', borderRadius: 4, background: isDark ? 'rgba(45,212,191,0.10)' : 'rgba(13,148,136,0.10)', color: isDark ? '#2dd4bf' : '#0d9488', fontFamily: '"JetBrains Mono", monospace', fontWeight: 500 }}>
+            v0.1.0
+          </span>
         </div>
-        <span style={{ fontSize: 9, color: '#7a8494' }}>{rowData.length} orders</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span style={{ fontSize: 9, color: 'var(--muted-foreground)' }}>{rowData.length} orders</span>
+          <button
+            onClick={() => setIsDark(!isDark)}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              width: 28, height: 28, borderRadius: 6,
+              border: '1px solid var(--border)',
+              background: 'var(--secondary)',
+              color: 'var(--foreground)',
+              cursor: 'pointer',
+              transition: 'all 150ms',
+            }}
+            title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+          >
+            {isDark ? <Sun size={14} strokeWidth={1.75} /> : <Moon size={14} strokeWidth={1.75} />}
+          </button>
+        </div>
       </header>
 
       <div style={{ flex: 1 }}>
@@ -75,7 +123,7 @@ export function App() {
           gridId="demo-blotter"
           rowData={rowData}
           columnDefs={columnDefs}
-          theme={darkTheme}
+          theme={theme}
           rowIdField="id"
           sideBar={{ toolPanels: ['columns', 'filters'] }}
           statusBar={{

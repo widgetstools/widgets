@@ -84,9 +84,9 @@ export function MarketsGrid<TData = any>({
           {showSettingsButton && (
             <button onClick={openSettings} style={{
               height: 36, padding: '0 12px',
-              background: '#1e2329', borderBottom: '1px solid #313944',
-              border: 'none', borderLeft: '1px solid #313944',
-              color: '#f0b90b', fontSize: 9, fontWeight: 600,
+              background: 'var(--card, #1e2329)', borderBottom: '1px solid var(--border, #313944)',
+              border: 'none', borderLeft: '1px solid var(--border, #313944)',
+              color: 'var(--primary, #f0b90b)', fontSize: 9, fontWeight: 600,
               cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4,
               fontFamily: "'Geist', sans-serif",
             }}>
