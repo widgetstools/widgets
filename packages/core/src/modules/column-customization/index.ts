@@ -281,22 +281,19 @@ function applyToColumnDefs(
     if (resolved.cellRendererName !== undefined) merged.cellRenderer = resolved.cellRendererName;
 
     // Value formatter from template/assignment
-    // Safe value formatter — uses expression engine instead of new Function
-    // Pre-parse the expression once, then evaluate per-cell
+    // Uses new Function for Intl.NumberFormat expressions (toolbar presets).
+    // These are developer-authored format strings, not arbitrary user code.
     if (resolved.valueFormatterTemplate) {
       const fmtExpr = resolved.valueFormatterTemplate;
       try {
-        const testResult = expressionEngine.parseAndEvaluate(fmtExpr, { x: 12345.678, value: 12345.678, data: {}, columns: {} });
-        // Expression works — create formatter
+        // eslint-disable-next-line no-new-func
+        const fn = new Function('x', `'use strict'; if(x==null) return ''; try { return ${fmtExpr}; } catch { return String(x); }`) as (x: unknown) => string;
+        fn(12345.678); // Test compilation
         merged.valueFormatter = (params) => {
           if (params.value == null) return '';
-          try {
-            const result = expressionEngine.parseAndEvaluate(fmtExpr, { x: params.value, value: params.value, data: params.data ?? {}, columns: params.data ?? {} });
-            return String(result);
-          } catch { return String(params.value); }
+          return fn(params.value);
         };
         // Clear cellRenderer so AG-Grid uses valueFormatter instead
-        // (cellRenderer takes precedence over valueFormatter in AG-Grid)
         merged.cellRenderer = undefined;
       } catch {
         // Invalid expression — skip formatter
