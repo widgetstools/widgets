@@ -4,6 +4,7 @@ import type { GridContext, ModuleContext } from '../types/common';
 import { EventBus } from './EventBus';
 import { CssInjector } from './CssInjector';
 import { GridLifecycle } from './lifecycle';
+import { ExpressionEngine } from '../expression';
 
 export interface GridCustomizerCoreOptions {
   gridId: string;
@@ -25,6 +26,8 @@ export class GridCustomizerCore {
   private rowIdField: string;
   private getModuleStateFn: <T>(moduleId: string) => T;
   private setModuleStateFn: <T>(moduleId: string, updater: (prev: T) => T) => void;
+  /** Shared per-grid expression engine — avoids module-scope singletons */
+  readonly expressionEngine: ExpressionEngine;
 
   constructor(options: GridCustomizerCoreOptions) {
     this.gridId = options.gridId;
@@ -35,6 +38,7 @@ export class GridCustomizerCore {
     this.eventBus = new EventBus();
     this.cssInjector = new CssInjector(options.gridId);
     this.lifecycle = new GridLifecycle();
+    this.expressionEngine = new ExpressionEngine();
 
     this.registerModules(options.modules);
   }
@@ -143,7 +147,7 @@ export class GridCustomizerCore {
       gridId: this.gridId,
       eventBus: this.eventBus,
       cssInjector: this.cssInjector,
-      expressionEngine: null as any, // Will be set when expression module registers
+      expressionEngine: this.expressionEngine,
       getGridContext: () => this.createGridContext(),
       getModuleState: this.getModuleStateFn,
       setModuleState: this.setModuleStateFn,

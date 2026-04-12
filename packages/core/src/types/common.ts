@@ -40,6 +40,8 @@ export interface EventBusInstance {
 export interface ExpressionEngineInstance {
   parse(expression: string): ExpressionNode;
   evaluate(node: ExpressionNode, context: EvaluationContext): unknown;
+  /** Parse and evaluate in one call — convenience method */
+  parseAndEvaluate(expression: string, context: EvaluationContext): unknown;
   tryCompileToAgString(node: ExpressionNode): string | null;
   validate(expression: string): ValidationResult;
 }

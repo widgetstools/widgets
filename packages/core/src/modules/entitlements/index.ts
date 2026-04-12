@@ -1,20 +1,21 @@
 import type { ColDef, ColGroupDef, EditableCallbackParams } from 'ag-grid-community';
 import type { GridCustomizerModule } from '../../types/module';
-import type { GridContext } from '../../types/common';
-import { ExpressionEngine } from '../../expression';
+import type { GridContext, ModuleContext, ExpressionEngineInstance } from '../../types/common';
 import { INITIAL_ENTITLEMENTS, type EntitlementsState, type EntitlementRule } from './state';
 import { EntitlementsPanel } from './EntitlementsPanel';
 
-const engine = new ExpressionEngine();
+/** Per-grid expression engine */
+const _engines = new Map<string, ExpressionEngineInstance>();
+let _lastGridId: string | null = null;
 
-function evaluateRule(rule: EntitlementRule, params: EditableCallbackParams): boolean {
+function evaluateRule(engine: ExpressionEngineInstance, rule: EntitlementRule, params: EditableCallbackParams): boolean {
   if (!rule.enabled) return rule.fallback === 'allow';
 
   switch (rule.type) {
     case 'row-value': {
       try {
         const data = params.data ?? {};
-        const result = engine.parseAndEvaluate(rule.expression, {
+        const result = engine!.parseAndEvaluate(rule.expression, {
           x: data,
           value: data,
           data: data,
@@ -47,13 +48,14 @@ function evaluateRule(rule: EntitlementRule, params: EditableCallbackParams): bo
 function applyEntitlements(
   defs: (ColDef | ColGroupDef)[],
   rules: EntitlementRule[],
+  engine: ExpressionEngineInstance,
 ): (ColDef | ColGroupDef)[] {
   const enabledRules = rules.filter((r) => r.enabled);
   if (enabledRules.length === 0) return defs;
 
   return defs.map((def) => {
     if ('children' in def && def.children) {
-      return { ...def, children: applyEntitlements(def.children, rules) };
+      return { ...def, children: applyEntitlements(def.children, rules, engine) };
     }
 
     const colDef = def as ColDef;
@@ -68,18 +70,14 @@ function applyEntitlements(
     return {
       ...colDef,
       editable: (params: EditableCallbackParams) => {
-        // Check original editable first
         let baseEditable = true;
         if (typeof originalEditable === 'function') {
           baseEditable = originalEditable(params);
         } else if (typeof originalEditable === 'boolean') {
           baseEditable = originalEditable;
         }
-
         if (!baseEditable) return false;
-
-        // Evaluate all entitlement rules; all must pass
-        return applicableRules.every((rule) => evaluateRule(rule, params));
+        return applicableRules.every((rule) => evaluateRule(engine, rule, params));
       },
     };
   });
@@ -93,12 +91,25 @@ export const entitlementsModule: GridCustomizerModule<EntitlementsState> = {
 
   getInitialState: () => ({ ...INITIAL_ENTITLEMENTS }),
 
+  onRegister(ctx: ModuleContext): void {
+    _engines.set(ctx.gridId, ctx.expressionEngine);
+    _lastGridId = ctx.gridId;
+  },
+
+  onGridDestroy(ctx: GridContext): void {
+    _engines.delete(ctx.gridId);
+    if (_lastGridId === ctx.gridId) _lastGridId = null;
+  },
+
   transformColumnDefs(
     defs: (ColDef | ColGroupDef)[],
     state: EntitlementsState,
     _ctx: GridContext,
   ): (ColDef | ColGroupDef)[] {
-    return applyEntitlements(defs, state.rules);
+    const gridId = _ctx?.gridId ?? _lastGridId;
+    const engine = gridId ? _engines.get(gridId) : undefined;
+    if (!engine) return defs;
+    return applyEntitlements(defs, state.rules, engine);
   },
 
   serialize: (state) => state,

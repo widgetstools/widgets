@@ -1,12 +1,14 @@
 import type { ColDef, ColGroupDef, GridOptions, CellClassParams, RowClassParams } from 'ag-grid-community';
 import type { GridCustomizerModule } from '../../types/module';
-import type { GridContext, ModuleContext, CellStyleProperties } from '../../types/common';
-import { ExpressionEngine } from '../../expression';
+import type { GridContext, ModuleContext, CellStyleProperties, ExpressionEngineInstance } from '../../types/common';
 import type { ConditionalRule, ConditionalStylingState } from './state';
 import { INITIAL_CONDITIONAL_STYLING } from './state';
 import { ConditionalStylingPanel } from './ConditionalStylingPanel';
 
-const engine = new ExpressionEngine();
+/** Per-grid expression engine + CSS injector */
+const _gridEngines = new Map<string, { engine: ExpressionEngineInstance; cssInjector: ModuleContext['cssInjector'] }>();
+/** Fallback for when GridContext is null (pre-gridApi) */
+let _lastGridId: string | null = null;
 
 function buildCssText(ruleId: string, light: CellStyleProperties, dark: CellStyleProperties): string {
   const lightProps = styleToCSS(light);
@@ -41,7 +43,7 @@ function styleToCSS(style: CellStyleProperties): string {
   return parts.join('; ');
 }
 
-function createCellClassRule(rule: ConditionalRule): ((params: CellClassParams) => boolean) | string {
+function createCellClassRule(engine: ExpressionEngineInstance, rule: ConditionalRule): ((params: CellClassParams) => boolean) | string {
   // Try to compile to AG-Grid string expression (fastest path)
   try {
     const ast = engine.parse(rule.expression);
@@ -70,13 +72,14 @@ function createCellClassRule(rule: ConditionalRule): ((params: CellClassParams) 
 function applyRulesToDefs(
   defs: (ColDef | ColGroupDef)[],
   rules: ConditionalRule[],
+  engine: ExpressionEngineInstance,
 ): (ColDef | ColGroupDef)[] {
   const cellRules = rules.filter((r) => r.enabled && r.scope.type === 'cell');
   if (cellRules.length === 0) return defs;
 
   return defs.map((def) => {
     if ('children' in def && def.children) {
-      return { ...def, children: applyRulesToDefs(def.children, rules) };
+      return { ...def, children: applyRulesToDefs(def.children, rules, engine) };
     }
 
     const colDef = def as ColDef;
@@ -93,7 +96,7 @@ function applyRulesToDefs(
     };
 
     for (const rule of applicableRules) {
-      cellClassRules[`gc-rule-${rule.id}`] = createCellClassRule(rule);
+      cellClassRules[`gc-rule-${rule.id}`] = createCellClassRule(engine, rule);
     }
 
     return { ...colDef, cellClassRules };
@@ -109,6 +112,8 @@ export const conditionalStylingModule: GridCustomizerModule<ConditionalStylingSt
   getInitialState: () => ({ ...INITIAL_CONDITIONAL_STYLING }),
 
   onRegister(ctx: ModuleContext): void {
+    _gridEngines.set(ctx.gridId, { engine: ctx.expressionEngine, cssInjector: ctx.cssInjector });
+    _lastGridId = ctx.gridId;
     // Inject CSS rules for all enabled rules
     const state = ctx.getModuleState<ConditionalStylingState>('conditional-styling');
     for (const rule of state.rules) {
@@ -118,14 +123,22 @@ export const conditionalStylingModule: GridCustomizerModule<ConditionalStylingSt
     }
   },
 
+  onGridDestroy(ctx: GridContext): void {
+    _gridEngines.delete(ctx.gridId);
+    if (_lastGridId === ctx.gridId) _lastGridId = null;
+  },
+
   transformColumnDefs(
     defs: (ColDef | ColGroupDef)[],
     state: ConditionalStylingState,
     _ctx: GridContext,
   ): (ColDef | ColGroupDef)[] {
+    const gridId = _ctx?.gridId ?? _lastGridId;
+    const gctx = gridId ? _gridEngines.get(gridId) : undefined;
+    if (!gctx) return defs;
     const enabledRules = state.rules.filter((r) => r.enabled).sort((a, b) => a.priority - b.priority);
     if (enabledRules.length === 0) return defs;
-    return applyRulesToDefs(defs, enabledRules);
+    return applyRulesToDefs(defs, enabledRules, gctx.engine);
   },
 
   transformGridOptions(
@@ -133,8 +146,10 @@ export const conditionalStylingModule: GridCustomizerModule<ConditionalStylingSt
     state: ConditionalStylingState,
     _ctx: GridContext,
   ): Partial<GridOptions> {
+    const gridId = _ctx?.gridId ?? _lastGridId;
+    const gctx = gridId ? _gridEngines.get(gridId) : undefined;
     const rowRules = state.rules.filter((r) => r.enabled && r.scope.type === 'row');
-    if (rowRules.length === 0) return opts;
+    if (rowRules.length === 0 || !gctx) return opts;
 
     const rowClassRules: Record<string, (params: RowClassParams) => boolean> = {
       ...(opts.rowClassRules as Record<string, any> ?? {}),
@@ -143,7 +158,7 @@ export const conditionalStylingModule: GridCustomizerModule<ConditionalStylingSt
     for (const rule of rowRules) {
       rowClassRules[`gc-rule-${rule.id}`] = (params: RowClassParams) => {
         try {
-          const result = engine.parseAndEvaluate(rule.expression, {
+          const result = gctx.engine.parseAndEvaluate(rule.expression, {
             x: null,
             value: null,
             data: params.data ?? {},

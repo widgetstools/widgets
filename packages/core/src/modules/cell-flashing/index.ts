@@ -1,18 +1,17 @@
 import type { ColDef, ColGroupDef, GridOptions, CellValueChangedEvent } from 'ag-grid-community';
 import type { GridCustomizerModule } from '../../types/module';
-import type { GridContext, ModuleContext } from '../../types/common';
-import { ExpressionEngine } from '../../expression';
+import type { GridContext, ModuleContext, ExpressionEngineInstance } from '../../types/common';
 import type { FlashRule, CellFlashingState } from './state';
 import { INITIAL_CELL_FLASHING } from './state';
 import { CellFlashingWizard } from './CellFlashingWizard';
 
-const engine = new ExpressionEngine();
-
-/** Map of gridId -> cleanup function for cellValueChanged listener */
-const cleanupMap = new Map<string, () => void>();
-
-/** Map of gridId -> CssInjectorInstance for dynamic flash color swapping */
-const injectorMap = new Map<string, { addRule: (id: string, css: string) => void; removeRule: (id: string) => void }>();
+/** Per-grid resources for cell flashing */
+interface FlashGridCtx {
+  cssInjector: { addRule: (id: string, css: string) => void; removeRule: (id: string) => void };
+  expressionEngine: ExpressionEngineInstance;
+  cleanup?: () => void;
+}
+const _gridCtx = new Map<string, FlashGridCtx>();
 
 function buildFlashCss(ruleId: string, rule: FlashRule): string {
   const lines: string[] = [];
@@ -48,7 +47,7 @@ function buildActiveFlashOverrideCss(rule: FlashRule, direction: 'up' | 'down' |
   return lines.join('\n');
 }
 
-function evaluateCondition(rule: FlashRule, value: unknown, oldValue: unknown, data: Record<string, unknown>): boolean {
+function evaluateCondition(engine: ExpressionEngineInstance, rule: FlashRule, value: unknown, oldValue: unknown, data: Record<string, unknown>): boolean {
   if (!rule.condition) return true;
   try {
     const result = engine.parseAndEvaluate(rule.condition, {
@@ -88,7 +87,10 @@ export const cellFlashingModule: GridCustomizerModule<CellFlashingState> = {
       const cssText = buildFlashCss(rule.id, rule);
       ctx.cssInjector.addRule(`flash-${rule.id}`, cssText);
     }
-    injectorMap.set(ctx.gridId, ctx.cssInjector);
+    _gridCtx.set(ctx.gridId, {
+      cssInjector: ctx.cssInjector,
+      expressionEngine: ctx.expressionEngine,
+    });
   },
 
   transformColumnDefs(
@@ -147,6 +149,7 @@ export const cellFlashingModule: GridCustomizerModule<CellFlashingState> = {
 
   onGridReady(ctx: GridContext): void {
     const { gridId, gridApi } = ctx;
+    const gctx = _gridCtx.get(gridId);
 
     const handler = (event: CellValueChangedEvent) => {
       // Re-read state dynamically so we always use current rules
@@ -161,17 +164,16 @@ export const cellFlashingModule: GridCustomizerModule<CellFlashingState> = {
         // Check if this column is targeted
         if (rule.columns.length > 0 && !rule.columns.includes(colId)) continue;
 
-        // Evaluate optional condition
-        if (!evaluateCondition(rule, event.newValue, event.oldValue, event.data ?? {})) continue;
+        // Evaluate optional condition (use per-grid expression engine)
+        if (gctx && !evaluateCondition(gctx.expressionEngine, rule, event.newValue, event.oldValue, event.data ?? {})) continue;
 
         const direction = determineDirection(event.newValue, event.oldValue);
 
         // Inject a temporary CSS override so AG Grid's built-in flash uses
         // this rule's color for the detected direction.
-        const cssInjector = injectorMap.get(gridId);
-        if (cssInjector) {
+        if (gctx?.cssInjector) {
           const overrideCss = buildActiveFlashOverrideCss(rule, direction);
-          cssInjector.addRule(`flash-active-${rule.id}`, overrideCss);
+          gctx.cssInjector.addRule(`flash-active-${rule.id}`, overrideCss);
         }
 
         if (rule.scope === 'row') {
@@ -198,18 +200,14 @@ export const cellFlashingModule: GridCustomizerModule<CellFlashingState> = {
 
     gridApi.addEventListener('cellValueChanged', handler);
 
-    cleanupMap.set(gridId, () => {
-      gridApi.removeEventListener('cellValueChanged', handler);
-    });
+    const entry = _gridCtx.get(gridId);
+    if (entry) entry.cleanup = () => gridApi.removeEventListener('cellValueChanged', handler);
   },
 
   onGridDestroy(ctx: GridContext): void {
-    const cleanup = cleanupMap.get(ctx.gridId);
-    if (cleanup) {
-      cleanup();
-      cleanupMap.delete(ctx.gridId);
-    }
-    injectorMap.delete(ctx.gridId);
+    const entry = _gridCtx.get(ctx.gridId);
+    if (entry?.cleanup) entry.cleanup();
+    _gridCtx.delete(ctx.gridId);
   },
 
   serialize: (state) => state,

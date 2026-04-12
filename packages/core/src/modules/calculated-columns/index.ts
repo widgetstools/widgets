@@ -1,11 +1,12 @@
 import type { ColDef, ColGroupDef, ValueGetterParams } from 'ag-grid-community';
 import type { GridCustomizerModule } from '../../types/module';
-import type { GridContext } from '../../types/common';
-import { ExpressionEngine } from '../../expression';
+import type { GridContext, ModuleContext, ExpressionEngineInstance } from '../../types/common';
 import { INITIAL_CALCULATED_COLUMNS, type CalculatedColumnsState } from './state';
 import { CalculatedColumnsPanel } from './CalculatedColumnsPanel';
 
-const engine = new ExpressionEngine();
+/** Per-grid expression engine */
+const _engines = new Map<string, ExpressionEngineInstance>();
+let _lastGridId: string | null = null;
 
 export const calculatedColumnsModule: GridCustomizerModule<CalculatedColumnsState> = {
   id: 'calculated-columns',
@@ -15,12 +16,24 @@ export const calculatedColumnsModule: GridCustomizerModule<CalculatedColumnsStat
 
   getInitialState: () => ({ ...INITIAL_CALCULATED_COLUMNS }),
 
+  onRegister(ctx: ModuleContext): void {
+    _engines.set(ctx.gridId, ctx.expressionEngine);
+    _lastGridId = ctx.gridId;
+  },
+
+  onGridDestroy(ctx: GridContext): void {
+    _engines.delete(ctx.gridId);
+    if (_lastGridId === ctx.gridId) _lastGridId = null;
+  },
+
   transformColumnDefs(
     defs: (ColDef | ColGroupDef)[],
     state: CalculatedColumnsState,
     _ctx: GridContext,
   ): (ColDef | ColGroupDef)[] {
-    if (state.columns.length === 0) return defs;
+    const gridId = _ctx?.gridId ?? _lastGridId;
+    const engine = gridId ? _engines.get(gridId) : undefined;
+    if (!engine || state.columns.length === 0) return defs;
 
     const virtualDefs: ColDef[] = state.columns.map((calc) => {
       // Pre-parse the expression for performance (avoid re-parsing per row)
