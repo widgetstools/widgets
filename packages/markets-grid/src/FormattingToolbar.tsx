@@ -939,16 +939,8 @@ export function FormattingToolbar({ core, store }: FormattingToolbarProps) {
           store.getState().pushUndoPoint('Before Clear All');
           store.getState().setModuleState('column-templates', () => ({ templates: {}, typeDefaults: {} }));
           store.getState().setModuleState('column-customization', () => ({ assignments: {} }));
-          // Force AG-Grid to re-read header styles (inline headerStyle is cached)
-          try {
-            const api = core.getGridApi();
-            if (api) {
-              // Clear all injected CSS rules
-              core.cssInjector.clear();
-              // Force header refresh so cached headerStyle functions are discarded
-              (api as any).refreshHeader?.();
-            }
-          } catch { /* */ }
+          // Clear all injected CSS rules immediately
+          core.cssInjector.clear();
         }}>
           <Trash2 size={12} strokeWidth={1.5} />
         </TBtn>

@@ -347,6 +347,10 @@ function applyToColumnDefs(
     } else {
       cssInjector.removeRule(`hdr-align-${colId}`);
       cssInjector.removeRule(`hdr-bo-${colId}`);
+      // Explicitly clear headerStyle/headerClass so AG-Grid doesn't keep stale values
+      // from a previous transformColumnDefs pass
+      merged.headerStyle = undefined;
+      merged.headerClass = undefined;
     }
 
     // Cell styling — single approach: cellClass + CSS injection
@@ -395,9 +399,10 @@ function applyToColumnDefs(
       const existing = typeof merged.cellClass === 'string' ? merged.cellClass : '';
       merged.cellClass = [existing, cls].filter(Boolean).join(' ');
     } else {
-      // No styles — remove any previously injected CSS rules
+      // No styles — remove any previously injected CSS rules and clear stale class
       cssInjector.removeRule(`col-c-${colId}`);
       cssInjector.removeRule(`col-bo-${colId}`);
+      merged.cellClass = undefined;
     }
 
     return merged;
