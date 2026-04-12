@@ -162,20 +162,20 @@ body {
 
 /* ─── Toolbar button theme styles ────────────────────────────────────────── */
 
-/* Default state — no cell selected (disabled). Visible but subdued. */
+/* Default state — no cell selected. High contrast but slightly muted via opacity. */
 .gc-tbtn {
-  color: var(--secondary-foreground);
+  color: var(--foreground);
+  opacity: 0.55;
 }
 .gc-tbtn:hover {
-  color: var(--foreground);
+  opacity: 1;
   background: var(--accent);
 }
-/* When a cell IS selected, buttons become fully active via this class on the toolbar */
+/* When a cell IS selected, buttons become fully opaque */
 .gc-toolbar-enabled .gc-tbtn {
-  color: var(--foreground);
+  opacity: 1;
 }
 .gc-toolbar-enabled .gc-tbtn:hover {
-  color: var(--foreground);
   background: var(--accent);
 }
 /* Active toggle state (bold ON, italic ON, etc.) */
