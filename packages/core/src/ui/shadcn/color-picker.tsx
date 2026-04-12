@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef, type ReactNode } from 'react';
+import { Droplet, Check, Pipette } from 'lucide-react';
 import { cn } from './utils';
 
 // ─── Color Palette ──────────────────────────────────────────────────────────
@@ -151,11 +152,13 @@ export function ColorPicker({ value, onChange, allowClear = true, compact = fals
 
       {/* ── Bottom: hex input + preview + native picker + actions ── */}
       <div className="flex items-center gap-1.5 mt-2.5 pt-2 border-t border-[#2b3139]">
-        {/* Native color picker trigger */}
+        {/* Native color picker trigger — shows current color + eyedropper icon */}
         <label
-          className="w-6 h-6 rounded-[3px] shrink-0 cursor-pointer ring-1 ring-white/10 relative overflow-hidden"
+          className="w-6 h-6 rounded-[3px] shrink-0 cursor-pointer ring-1 ring-white/10 relative overflow-hidden flex items-center justify-center group/picker"
           style={{ background: draft || '#1e2329' }}
+          title="Pick custom color"
         >
+          <Pipette size={11} strokeWidth={1.5} className="text-white/60 group-hover/picker:text-white/90 transition-colors drop-shadow-sm" />
           <input
             type="color"
             value={draft || '#000000'}
@@ -183,14 +186,10 @@ export function ColorPicker({ value, onChange, allowClear = true, compact = fals
           <button
             onClick={clear}
             onMouseDown={(e) => e.preventDefault()}
-            className="h-6 w-6 rounded-[3px] shrink-0 ring-1 ring-[#313944]/60 hover:ring-[#7a8494]/40 cursor-pointer transition-all flex items-center justify-center relative overflow-hidden"
-            style={{ background: '#1e2329' }}
+            className="h-6 w-6 rounded-[3px] shrink-0 ring-1 ring-[#313944]/60 hover:ring-[#f87171]/20 hover:bg-[#f87171]/8 cursor-pointer transition-all flex items-center justify-center group/clear"
             title="No color"
           >
-            {/* Diagonal strike-through */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-[120%] h-[1.5px] bg-[#f87171] rotate-45" />
-            </div>
+            <Droplet size={12} strokeWidth={1.5} className="text-[#4a5568] group-hover/clear:text-[#f87171] transition-colors" />
           </button>
         )}
 
@@ -199,13 +198,14 @@ export function ColorPicker({ value, onChange, allowClear = true, compact = fals
           onClick={confirm}
           onMouseDown={(e) => e.preventDefault()}
           className={cn(
-            'h-6 px-3 rounded-[3px] text-[10px] font-medium tracking-wide shrink-0 transition-all cursor-pointer',
+            'h-6 w-6 rounded-[3px] shrink-0 transition-all cursor-pointer flex items-center justify-center',
             draft
-              ? 'bg-[#f0b90b] text-[#0b0e11] hover:bg-[#fcd34d]'
+              ? 'bg-[#f0b90b] text-[#0b0e11] hover:bg-[#fcd34d] ring-1 ring-[#f0b90b]/30'
               : 'bg-[#2b3139] text-[#4a5568] pointer-events-none',
           )}
+          title="Apply color"
         >
-          Apply
+          <Check size={13} strokeWidth={2.5} />
         </button>
       </div>
     </div>
