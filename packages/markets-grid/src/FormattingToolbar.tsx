@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import type { GridCustomizerCore, GridStore, GridCustomizerStore, CellStyleProperties } from '@grid-customizer/core';
-import { Button, Popover, Separator, Tooltip, Select, cn } from '@grid-customizer/core';
+import { Button, Popover, Separator, Tooltip, Select, ColorPickerPopover, cn } from '@grid-customizer/core';
 import {
   Undo2, Redo2, Bold, Italic, Underline,
   AlignLeft, AlignCenter, AlignRight,
@@ -38,29 +38,7 @@ function getDecimalsFromExpr(expr: string | undefined): number | null {
   return null;
 }
 
-// ─── Color Palette ──────────────────────────────────────────────────────────
-
-/** Theme colors — vivid (top row) and muted (bottom row), from FI design system */
-const THEME_COLORS_VIVID  = ['#2dd4bf', '#3da0ff', '#22d3ee', '#f0b90b', '#f87171', '#a78bfa', '#f472b6', '#eaecef'];
-const THEME_COLORS_MUTED  = ['#0d9488', '#2563eb', '#0891b2', '#d97706', '#dc2626', '#7c3aed', '#db2777', '#4a5568'];
-/** Standard rainbow spectrum */
-const STANDARD_COLORS     = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#06b6d4', '#3b82f6', '#8b5cf6', '#ec4899'];
-
-const RECENT_COLORS_KEY = 'gc-recent-colors';
-const MAX_RECENT = 5;
-
-function getRecentColors(): string[] {
-  try { return JSON.parse(localStorage.getItem(RECENT_COLORS_KEY) || '[]').slice(0, MAX_RECENT); }
-  catch { return []; }
-}
-
-function addRecentColor(color: string): void {
-  try {
-    const recent = getRecentColors().filter(c => c !== color);
-    recent.unshift(color);
-    localStorage.setItem(RECENT_COLORS_KEY, JSON.stringify(recent.slice(0, MAX_RECENT)));
-  } catch { /* */ }
-}
+// ─── Color constants removed — shared ColorPicker in @grid-customizer/core ──
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
@@ -105,151 +83,7 @@ function TGroup({ children, className }: { children: React.ReactNode; className?
   );
 }
 
-/** Color swatch button — shared between all sections */
-function Swatch({ color, selected, onClick }: { color: string; selected: boolean; onClick: () => void }) {
-  return (
-    <Tooltip content={color}>
-      <button
-        onClick={onClick}
-        onMouseDown={(e) => e.preventDefault()}
-        className={cn(
-          'w-[22px] h-[22px] rounded-[3px] cursor-pointer transition-all duration-100',
-          selected
-            ? 'ring-2 ring-[#f0b90b] ring-offset-1 ring-offset-[#161a1e] scale-110'
-            : 'ring-1 ring-white/8 hover:ring-white/20 hover:scale-110',
-        )}
-        style={{ background: color }}
-      />
-    </Tooltip>
-  );
-}
-
-function ColorPopover({ value, onChange, icon, disabled }: {
-  value?: string; onChange: (c: string | undefined) => void; icon: React.ReactNode; disabled?: boolean;
-}) {
-  const [hexInput, setHexInput] = useState(value || '');
-  const [recentColors, setRecentColors] = useState<string[]>(getRecentColors);
-
-  // Sync hex input when external value changes
-  useEffect(() => { setHexInput(value || ''); }, [value]);
-
-  const pickColor = useCallback((c: string) => {
-    onChange(c);
-    addRecentColor(c);
-    setRecentColors(getRecentColors());
-  }, [onChange]);
-
-  const commitHex = useCallback(() => {
-    const hex = hexInput.trim();
-    if (/^#?[0-9a-fA-F]{3,8}$/.test(hex)) {
-      const normalized = hex.startsWith('#') ? hex : `#${hex}`;
-      pickColor(normalized);
-    }
-  }, [hexInput, pickColor]);
-
-  return (
-    <Popover
-      trigger={
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          disabled={disabled}
-          className={cn(
-            'shrink-0 rounded-[3px] text-[#7a8494] hover:text-[#eaecef] hover:bg-[#2b3139] transition-all duration-150',
-            disabled && 'opacity-20 pointer-events-none',
-          )}
-          onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
-        >
-          <span className="flex flex-col items-center gap-[1px]">
-            {icon}
-            <span
-              className="w-3.5 h-[2.5px] rounded-full transition-colors"
-              style={{ background: value || '#7a8494' }}
-            />
-          </span>
-        </Button>
-      }
-    >
-      <div className="p-2.5 w-[228px]" onMouseDown={(e) => {
-        const tag = (e.target as HTMLElement).tagName;
-        if (tag !== 'INPUT') e.preventDefault();
-      }}>
-
-        {/* ── Recent colors ── */}
-        {recentColors.length > 0 && (
-          <div className="mb-2">
-            <div className="text-[8px] text-[#4a5568] uppercase tracking-[0.1em] mb-1.5 font-medium">Recent</div>
-            <div className="flex gap-1">
-              {recentColors.map((c) => (
-                <Swatch key={c} color={c} selected={value === c} onClick={() => pickColor(c)} />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* ── Theme colors ── */}
-        <div className="mb-2">
-          <div className="text-[8px] text-[#4a5568] uppercase tracking-[0.1em] mb-1.5 font-medium">Theme</div>
-          <div className="grid grid-cols-8 gap-1 mb-1">
-            {THEME_COLORS_VIVID.map((c) => (
-              <Swatch key={c} color={c} selected={value === c} onClick={() => pickColor(c)} />
-            ))}
-          </div>
-          <div className="grid grid-cols-8 gap-1">
-            {THEME_COLORS_MUTED.map((c) => (
-              <Swatch key={c} color={c} selected={value === c} onClick={() => pickColor(c)} />
-            ))}
-          </div>
-        </div>
-
-        {/* ── Standard colors ── */}
-        <div className="mb-2.5">
-          <div className="text-[8px] text-[#4a5568] uppercase tracking-[0.1em] mb-1.5 font-medium">Standard</div>
-          <div className="grid grid-cols-8 gap-1">
-            {STANDARD_COLORS.map((c) => (
-              <Swatch key={c} color={c} selected={value === c} onClick={() => pickColor(c)} />
-            ))}
-          </div>
-        </div>
-
-        {/* ── Hex input + preview + no-color ── */}
-        <div className="flex items-center gap-1.5 pt-2 border-t border-[#1e2329]">
-          {/* Color preview + native picker */}
-          <label
-            className="w-[22px] h-[22px] rounded-[3px] shrink-0 cursor-pointer ring-1 ring-white/8 relative overflow-hidden"
-            style={{ background: value || '#1e2329' }}
-          >
-            <input
-              type="color"
-              value={value || '#ffffff'}
-              onChange={(e) => pickColor(e.target.value)}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-            />
-          </label>
-          {/* Hex text input */}
-          <input
-            type="text"
-            value={hexInput}
-            onChange={(e) => setHexInput(e.target.value)}
-            onBlur={commitHex}
-            onKeyDown={(e) => { if (e.key === 'Enter') commitHex(); }}
-            placeholder="#000000"
-            className="flex-1 h-[22px] px-1.5 rounded-[3px] bg-[#0b0e11] text-[10px] font-mono text-[#eaecef] placeholder-[#4a5568] ring-1 ring-[#313944] focus:ring-[#f0b90b]/50 focus:outline-none transition-all"
-          />
-          {/* No color */}
-          <button
-            onClick={() => onChange(undefined)}
-            onMouseDown={(e) => e.preventDefault()}
-            className="h-[22px] px-2 rounded-[3px] text-[9px] text-[#7a8494] ring-1 ring-[#313944]/60 hover:ring-[#7a8494]/40 hover:text-[#eaecef] cursor-pointer transition-all flex items-center gap-1 shrink-0"
-            title="Remove color"
-          >
-            <X size={9} strokeWidth={2} />
-          </button>
-        </div>
-      </div>
-    </Popover>
-  );
-}
+// ColorPopover removed — using shared ColorPickerPopover from @grid-customizer/core
 
 // ─── Hooks ───────────────────────────────────────────────────────────────────
 
@@ -806,10 +640,10 @@ export function FormattingToolbar({ core, store }: FormattingToolbarProps) {
           <Underline size={13} strokeWidth={1.5} />
         </TBtn>
         <div className="w-px h-4 bg-[#2b3139]/50" />
-        <ColorPopover disabled={disabled} value={fmt.color} icon={<Type size={11} strokeWidth={2} />}
-          onChange={(c) => doStyle({ color: c })} />
-        <ColorPopover disabled={disabled} value={fmt.backgroundColor} icon={<PaintBucket size={11} strokeWidth={1.5} />}
-          onChange={(c) => doStyle({ backgroundColor: c })} />
+        <ColorPickerPopover disabled={disabled} value={fmt.color} icon={<Type size={11} strokeWidth={2} />}
+          onChange={(c) => doStyle({ color: c })} compact />
+        <ColorPickerPopover disabled={disabled} value={fmt.backgroundColor} icon={<PaintBucket size={11} strokeWidth={1.5} />}
+          onChange={(c) => doStyle({ backgroundColor: c })} compact />
       </TGroup>
 
       <div className="w-px h-5 bg-[#1e2329] shrink-0" />

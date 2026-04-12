@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Input } from './shadcn/input';
 import { Select } from './shadcn/select';
 import { Switch } from './shadcn/switch';
 import { Label } from './shadcn/label';
+import { ColorPicker } from './shadcn/color-picker';
 import { cn } from './shadcn/utils';
 import { ChevronRight } from 'lucide-react';
 
@@ -155,15 +156,41 @@ export function PropText({ value, onChange, placeholder, mono, width }: {
 export function PropColor({ value, onChange, label }: {
   value: string | undefined; onChange: (v: string) => void; label?: string;
 }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT') return;
+      if (ref.current && !ref.current.contains(target)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
   return (
-    <div className="flex items-center gap-1.5">
+    <div className="flex items-center gap-1.5" ref={ref}>
       {label && <span className="text-[9px] text-muted-foreground w-6">{label}</span>}
-      <label className="relative block w-6 h-6 rounded border border-border cursor-pointer overflow-hidden"
-        style={{ background: value || 'transparent' }}>
-        <input type="color" value={value || '#000000'} onChange={(e) => onChange(e.target.value)}
-          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
-      </label>
-      <span className="text-[9px] font-mono text-muted-foreground">{value || '—'}</span>
+      <button
+        className="relative block w-6 h-6 rounded border border-border cursor-pointer overflow-hidden"
+        style={{ background: value || 'transparent' }}
+        onClick={() => setOpen(!open)}
+      />
+      <span className="text-[9px] font-mono text-muted-foreground cursor-pointer" onClick={() => setOpen(!open)}>
+        {value || '—'}
+      </span>
+      {open && (
+        <div className="absolute z-50 mt-1 top-full left-0 rounded-md border border-[#313944] bg-[#161a1e] shadow-xl shadow-black/40">
+          <ColorPicker
+            value={value}
+            onChange={(c) => { if (c) onChange(c); setOpen(false); }}
+            allowClear={false}
+            compact
+          />
+        </div>
+      )}
     </div>
   );
 }

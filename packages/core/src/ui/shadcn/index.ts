@@ -7,3 +7,4 @@ export { Popover } from './popover';
 export { Tooltip } from './tooltip';
 export { Separator } from './separator';
 export { Label } from './label';
+export { ColorPicker, ColorPickerPopover, type ColorPickerProps, type ColorPickerPopoverProps } from './color-picker';

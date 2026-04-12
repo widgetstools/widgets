@@ -81,6 +81,7 @@ export { Tooltip } from './ui/shadcn/tooltip';
 export { Separator } from './ui/shadcn/separator';
 export { Label } from './ui/shadcn/label';
 export { cn } from './ui/shadcn/utils';
+export { ColorPicker, ColorPickerPopover } from './ui/shadcn/color-picker';
 
 // ─── All Modules (ordered by priority) ───────────────────────────────────────
 import { generalSettingsModule } from './modules/general-settings';
