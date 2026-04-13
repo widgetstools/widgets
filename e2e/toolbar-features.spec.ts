@@ -74,21 +74,29 @@ async function getCellText(page: Page, colId: string, rowIndex = 0): Promise<str
   }, { id: colId, row: rowIndex });
 }
 
-/** Click a toolbar button by its tooltip text */
+/** Click a toolbar button by its tooltip text (exact match) */
 async function clickToolbarBtn(page: Page, tooltipText: string) {
-  // Tooltips are rendered as StaticText siblings of buttons inside .group wrappers
   await page.evaluate((tip) => {
     const toolbar = document.querySelector('[class*="z-[10000]"]');
     if (!toolbar) throw new Error('Toolbar not found');
-    // Find tooltip text nodes
+    // Tooltip text is rendered as a text node inside the .group wrapper.
+    // Find the group whose tooltip text content exactly matches.
     const groups = toolbar.querySelectorAll('.group');
+    // First pass: try exact match on the tooltip text (child div text)
     for (const group of groups) {
-      if (group.textContent?.includes(tip)) {
-        const btn = group.querySelector('button');
-        if (btn) {
-          btn.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
-          return;
+      const texts = group.querySelectorAll('div');
+      for (const t of texts) {
+        if (t.textContent?.trim() === tip) {
+          const btn = group.querySelector('button');
+          if (btn) { btn.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true })); return; }
         }
+      }
+    }
+    // Second pass: fallback to includes (for backwards compat)
+    for (const group of groups) {
+      if (group.textContent?.includes(tip) && !group.textContent?.includes(tip + ' ')) {
+        const btn = group.querySelector('button');
+        if (btn) { btn.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true })); return; }
       }
     }
     throw new Error(`Toolbar button with tooltip "${tip}" not found`);

@@ -64,7 +64,16 @@ async function clickToolbarBtn(page: Page, tooltipText: string) {
     if (!toolbar) throw new Error('Toolbar not found');
     const groups = toolbar.querySelectorAll('.group');
     for (const group of groups) {
-      if (group.textContent?.includes(tip)) {
+      const texts = group.querySelectorAll('div');
+      for (const t of texts) {
+        if (t.textContent?.trim() === tip) {
+          const btn = group.querySelector('button');
+          if (btn) { btn.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true })); return; }
+        }
+      }
+    }
+    for (const group of groups) {
+      if (group.textContent?.includes(tip) && !group.textContent?.includes(tip + ' ')) {
         const btn = group.querySelector('button');
         if (btn) { btn.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true })); return; }
       }

@@ -91,21 +91,8 @@ export function useGridCustomizer(options: UseGridCustomizerOptions): UseGridCus
     };
   }, [core, gridId]);
 
-  // ── Auto-persist: save to localStorage whenever module states change and isDirty ──
-  useEffect(() => {
-    if (!persistState) return;
-    const unsub = store.subscribe((state) => {
-      if (state.isDirty) {
-        try {
-          const serialized = core.serializeAll();
-          localStorage.setItem(LS_PREFIX + gridId, JSON.stringify(serialized));
-        } catch {
-          // localStorage full or unavailable
-        }
-      }
-    });
-    return unsub;
-  }, [store, core, gridId, persistState]);
+  // Auto-persist removed — styles only save when user explicitly clicks the Save button.
+  // The Save button in FormattingToolbar calls core.serializeAll() + localStorage.setItem().
 
   const openSettings = useCallback(() => {
     store.getState().setSettingsOpen(true);
