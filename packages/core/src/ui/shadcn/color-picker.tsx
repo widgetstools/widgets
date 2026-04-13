@@ -40,9 +40,9 @@ function addRecentColor(color: string): void {
 
 // ─── Swatch ─────────────────────────────────────────────────────────────────
 
-const SWATCH_SIZE = 28;
-const SWATCH_GAP = 3;
-const SWATCH_RADIUS = 4;
+const SWATCH_SIZE = 19;
+const SWATCH_GAP = 2;
+const SWATCH_RADIUS = 3;
 
 function Swatch({ color, selected, onClick }: {
   color: string; selected: boolean; onClick: () => void;
@@ -57,7 +57,7 @@ function Swatch({ color, selected, onClick }: {
         width: SWATCH_SIZE, height: SWATCH_SIZE,
         borderRadius: SWATCH_RADIUS,
         background: color,
-        outline: selected ? '2.5px solid var(--primary)' : 'none',
+        outline: selected ? '2px solid var(--primary)' : 'none',
         outlineOffset: selected ? 1 : 0,
         transform: selected ? 'scale(1.08)' : undefined,
         zIndex: selected ? 10 : undefined,
@@ -117,7 +117,7 @@ export function ColorPicker({ value, onChange, allowClear = true }: ColorPickerP
   const gridStyle = { display: 'flex', gap: SWATCH_GAP, marginBottom: SWATCH_GAP };
 
   return (
-    <div style={{ padding: 12 }} onMouseDown={(e) => {
+    <div style={{ padding: 8 }} onMouseDown={(e) => {
       if ((e.target as HTMLElement).tagName !== 'INPUT') e.preventDefault();
     }}>
       {/* ── Grayscale row ── */}
@@ -138,8 +138,8 @@ export function ColorPicker({ value, onChange, allowClear = true }: ColorPickerP
 
       {/* ── Recent colors ── */}
       {recentColors.length > 0 && (
-        <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
-          <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: 'var(--muted-foreground)', marginBottom: 8 }}>
+        <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--border)' }}>
+          <div style={{ fontSize: 8, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: 'var(--muted-foreground)', marginBottom: 5 }}>
             Recent
           </div>
           <div style={{ display: 'flex', gap: SWATCH_GAP }}>
@@ -151,11 +151,11 @@ export function ColorPicker({ value, onChange, allowClear = true }: ColorPickerP
       )}
 
       {/* ── Bottom bar: pipette + hex input + clear + confirm ── */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--border)' }}>
         {/* Pipette / native color picker */}
         <label
           style={{
-            width: 32, height: 32, borderRadius: SWATCH_RADIUS,
+            width: 22, height: 22, borderRadius: SWATCH_RADIUS,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             cursor: 'pointer', position: 'relative', overflow: 'hidden',
             background: draft || 'var(--accent)',
@@ -163,7 +163,7 @@ export function ColorPicker({ value, onChange, allowClear = true }: ColorPickerP
           }}
           title="Pick custom color"
         >
-          <Pipette size={14} strokeWidth={1.5} style={{ color: 'var(--foreground)', opacity: 0.7 }} />
+          <Pipette size={10} strokeWidth={1.5} style={{ color: 'var(--foreground)', opacity: 0.7 }} />
           <input
             type="color"
             value={draft || '#000000'}
@@ -184,9 +184,9 @@ export function ColorPicker({ value, onChange, allowClear = true }: ColorPickerP
           }}
           placeholder="#000000"
           style={{
-            flex: 1, height: 32, padding: '0 10px',
+            flex: 1, height: 22, padding: '0 8px',
             borderRadius: SWATCH_RADIUS,
-            fontSize: 11, fontFamily: "'JetBrains Mono', monospace",
+            fontSize: 9, fontFamily: "'JetBrains Mono', monospace",
             background: 'var(--background)', color: 'var(--foreground)',
             border: '1px solid var(--border)', outline: 'none',
             minWidth: 0,
@@ -200,7 +200,7 @@ export function ColorPicker({ value, onChange, allowClear = true }: ColorPickerP
             onMouseDown={(e) => e.preventDefault()}
             title="No color"
             style={{
-              width: 32, height: 32, borderRadius: SWATCH_RADIUS,
+              width: 22, height: 22, borderRadius: SWATCH_RADIUS,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               cursor: 'pointer', transition: 'all 150ms',
               background: 'var(--accent)',
@@ -208,7 +208,7 @@ export function ColorPicker({ value, onChange, allowClear = true }: ColorPickerP
               color: 'var(--foreground)',
             }}
           >
-            <X size={14} strokeWidth={2} />
+            <X size={10} strokeWidth={2} />
           </button>
         )}
 
@@ -218,7 +218,7 @@ export function ColorPicker({ value, onChange, allowClear = true }: ColorPickerP
           onMouseDown={(e) => e.preventDefault()}
           title="Apply color"
           style={{
-            width: 32, height: 32, borderRadius: SWATCH_RADIUS,
+            width: 22, height: 22, borderRadius: SWATCH_RADIUS,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             cursor: 'pointer', transition: 'all 150ms',
             background: draft ? 'var(--foreground)' : 'var(--accent)',
@@ -226,7 +226,7 @@ export function ColorPicker({ value, onChange, allowClear = true }: ColorPickerP
             border: '1px solid var(--border)',
           }}
         >
-          <Check size={14} strokeWidth={2.5} />
+          <Check size={10} strokeWidth={2.5} />
         </button>
       </div>
     </div>
@@ -294,7 +294,7 @@ export function ColorPickerPopover({ value, onChange, icon, disabled, allowClear
         <div
           className="absolute z-50 top-full mt-1 left-0"
           style={{
-            borderRadius: 12,
+            borderRadius: 8,
             border: '1px solid var(--border)',
             background: 'var(--card)',
             boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
