@@ -124,11 +124,11 @@ export function ColorPicker({ value, onChange, allowClear = true, compact = fals
   const filteredHueRows = [HUE_GRID[0], HUE_GRID[1], HUE_GRID[3], HUE_GRID[4], HUE_GRID[6]];
 
   return (
-    <div className="p-2" onMouseDown={(e) => {
+    <div className="p-3.5" onMouseDown={(e) => {
       if ((e.target as HTMLElement).tagName !== 'INPUT') e.preventDefault();
     }}>
       {/* ── Grayscale row ── */}
-      <div className="flex gap-[1px] mb-[1px]">
+      <div className="flex gap-[2px] mb-[2px]">
         {GRAYSCALE.map((c) => (
           <Swatch key={c} color={c} size={sz} selected={draft === c} onClick={() => selectColor(c)} />
         ))}
@@ -136,7 +136,7 @@ export function ColorPicker({ value, onChange, allowClear = true, compact = fals
 
       {/* ── Hue grid (6 rows: grayscale + 5 hue rows) ── */}
       {filteredHueRows.map((row, ri) => (
-        <div key={ri} className="flex gap-[1px] mb-[1px]">
+        <div key={ri} className="flex gap-[2px] mb-[2px]">
           {row.map((c) => (
             <Swatch key={c} color={c} size={sz} selected={draft === c} onClick={() => selectColor(c)} />
           ))}
@@ -145,9 +145,9 @@ export function ColorPicker({ value, onChange, allowClear = true, compact = fals
 
       {/* ── Recent colors ── */}
       {recentColors.length > 0 && (
-        <div className="mt-2 pt-1.5" style={{ borderTop: '1px solid var(--border)' }}>
-          <div className="text-[8px] uppercase tracking-[0.1em] mb-1" style={{ color: 'var(--muted-foreground)' }}>RECENT</div>
-          <div className="flex gap-[1px]">
+        <div className="mt-3 pt-2.5" style={{ borderTop: '1px solid var(--border)' }}>
+          <div className="text-[8px] uppercase tracking-[0.12em] mb-1.5 font-medium" style={{ color: 'var(--muted-foreground)' }}>Recent</div>
+          <div className="flex gap-[2px]">
             {recentColors.map((c) => (
               <Swatch key={c} color={c} size={sz} selected={draft === c} onClick={() => selectColor(c)} />
             ))}
@@ -156,10 +156,10 @@ export function ColorPicker({ value, onChange, allowClear = true, compact = fals
       )}
 
       {/* ── Bottom: hex input + preview + native picker + actions ── */}
-      <div className="flex items-center gap-2 mt-3 pt-2.5" style={{ borderTop: '1px solid var(--border)' }}>
+      <div className="flex items-center gap-2.5 mt-3.5 pt-3" style={{ borderTop: '1px solid var(--border)' }}>
         {/* Native color picker trigger — shows current color + eyedropper icon */}
         <label
-          className="w-6 h-6 rounded-[3px] shrink-0 cursor-pointer relative overflow-hidden flex items-center justify-center group/picker"
+          className="w-7 h-7 rounded-[4px] shrink-0 cursor-pointer relative overflow-hidden flex items-center justify-center group/picker"
           style={{ background: draft || 'var(--card)', border: '1px solid var(--border)' }}
           title="Pick custom color"
         >
@@ -192,7 +192,7 @@ export function ColorPicker({ value, onChange, allowClear = true, compact = fals
           <button
             onClick={clear}
             onMouseDown={(e) => e.preventDefault()}
-            className="h-6 px-1.5 rounded-[3px] shrink-0 cursor-pointer transition-all flex items-center justify-center gap-1"
+            className="h-7 px-2 rounded-[4px] shrink-0 cursor-pointer transition-all flex items-center justify-center gap-1.5"
             style={{ background: 'color-mix(in srgb, var(--destructive) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--destructive) 25%, transparent)' }}
             title="No color"
           >
@@ -205,7 +205,7 @@ export function ColorPicker({ value, onChange, allowClear = true, compact = fals
         <button
           onClick={confirm}
           onMouseDown={(e) => e.preventDefault()}
-          className="h-6 w-6 rounded-[3px] shrink-0 transition-all cursor-pointer flex items-center justify-center"
+          className="h-7 w-7 rounded-[4px] shrink-0 transition-all cursor-pointer flex items-center justify-center"
           style={draft ? { background: 'var(--primary)', color: 'var(--primary-foreground)' } : { background: 'var(--accent)', color: 'var(--muted-foreground)' }}
           title="Apply color"
         >

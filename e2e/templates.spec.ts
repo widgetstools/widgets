@@ -101,7 +101,7 @@ async function saveAsTemplate(page: Page, name: string) {
     const toolbar = document.querySelector('[class*="z-[10000]"]');
     if (!toolbar) throw new Error('Toolbar not found');
     // Find the TGroup that contains the <select> (template group)
-    const tgroups = toolbar.querySelectorAll('[class*="gap-[2px]"]');
+    const tgroups = toolbar.querySelectorAll('[class*="gap-[3px]"]');
     for (const tg of tgroups) {
       if (!tg.querySelector('select')) continue;
       // Found template group — find the Popover trigger (.relative.inline-flex > .cursor-pointer)
@@ -382,7 +382,7 @@ test.describe('Save As Template', () => {
       for (const w of wrappers) {
         const cursor = (w as HTMLElement).querySelector(':scope > .cursor-pointer');
         if (!cursor) continue;
-        const parent = cursor.closest('[class*="gap-[2px]"]');
+        const parent = cursor.closest('[class*="gap-[3px]"]');
         if (parent?.querySelector('select')) {
           (cursor as HTMLElement).click();
           break;

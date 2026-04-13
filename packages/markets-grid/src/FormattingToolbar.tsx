@@ -77,7 +77,7 @@ function TBtn({ children, active, disabled, tooltip, onClick, className }: {
 /** Toolbar group — clusters related tools with a subtle background */
 function TGroup({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={cn('flex items-center gap-[2px] px-1 py-[3px] rounded-[6px]', className)}
+    <div className={cn('flex items-center gap-[3px] px-1.5 py-1 rounded-[6px]', className)}
       style={{ background: 'color-mix(in srgb, var(--accent) 40%, transparent)' }}>
       {children}
     </div>
@@ -565,7 +565,7 @@ export function FormattingToolbar({ core, store }: FormattingToolbarProps) {
 
   return (
     <div
-      className={cn('flex items-center gap-1.5 h-[38px] px-2.5 shrink-0 border-b text-xs relative z-[10000]', !disabled && 'gc-toolbar-enabled')}
+      className={cn('flex items-center gap-2 h-[42px] px-3 shrink-0 border-b text-xs relative z-[10000]', !disabled && 'gc-toolbar-enabled')}
       style={{ background: 'var(--card, #161a1e)', borderColor: 'var(--border, #1e2329)' }}
       onMouseDown={(e) => {
         const tag = (e.target as HTMLElement).tagName;
@@ -573,7 +573,7 @@ export function FormattingToolbar({ core, store }: FormattingToolbarProps) {
       }}
     >
       {/* ── Column context + CELL/HDR segmented control ── */}
-      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] shrink-0"
+      <div className="flex items-center gap-2 px-3 py-1.5 rounded-[6px] shrink-0"
         style={{ border: '1px solid var(--border)' }}>
         <span className="text-[10px] font-mono tracking-wider max-w-[100px] overflow-hidden text-ellipsis whitespace-nowrap select-none"
           style={{ color: colIds.length > 0 ? 'var(--foreground)' : 'var(--muted-foreground)' }}
@@ -627,7 +627,7 @@ export function FormattingToolbar({ core, store }: FormattingToolbarProps) {
               </TBtn>
             }
           >
-            <div className="p-2.5 w-[220px]" onMouseDown={(e) => {
+            <div className="p-3.5 w-[230px]" onMouseDown={(e) => {
               if ((e.target as HTMLElement).tagName !== 'INPUT') e.preventDefault();
             }}>
               <div className="text-[9px] uppercase tracking-[0.08em] mb-1.5" style={{ color: 'var(--muted-foreground)' }}>
@@ -840,11 +840,11 @@ export function FormattingToolbar({ core, store }: FormattingToolbarProps) {
           };
 
           return (
-            <div className="p-3 w-[200px]" style={{ background: 'var(--card)' }}
+            <div className="p-4 w-[220px]" style={{ background: 'var(--card)' }}
               onMouseDown={(e) => { const tag = (e.target as HTMLElement).tagName; if (tag !== 'SELECT' && tag !== 'INPUT') e.preventDefault(); }}>
 
               {/* ── Visual cell preview with clickable edges ── */}
-              <div className="relative w-full aspect-[3/2] rounded-[4px] mb-3" style={{ background: 'var(--background)', border: '1px dashed var(--border)' }}>
+              <div className="relative w-full aspect-[3/2] rounded-[5px] mb-4" style={{ background: 'var(--background)', border: '1px dashed var(--border)' }}>
                 {/* Top border toggle */}
                 <button className="absolute top-0 left-3 right-3 h-[6px] cursor-pointer rounded-t-[2px] transition-all"
                   style={{ background: hasT ? activeColor : 'transparent' }}
@@ -868,7 +868,7 @@ export function FormattingToolbar({ core, store }: FormattingToolbarProps) {
               </div>
 
               {/* ── Preset buttons ── */}
-              <div className="grid grid-cols-4 gap-1.5 mb-3">
+              <div className="grid grid-cols-4 gap-2 mb-4">
                 <button className="flex flex-col items-center gap-1 py-1.5 rounded-[4px] text-[8px] cursor-pointer transition-all"
                   style={{ border: '1px solid var(--border)', color: 'var(--muted-foreground)', background: 'var(--background)' }}
                   onClick={() => setAllBorders(activeWidth)} onMouseDown={(e) => e.preventDefault()}>
@@ -896,8 +896,8 @@ export function FormattingToolbar({ core, store }: FormattingToolbarProps) {
               </div>
 
               {/* ── Color + Width row ── */}
-              <div className="flex items-center gap-2">
-                <label className="w-7 h-7 rounded-[4px] shrink-0 cursor-pointer relative overflow-hidden"
+              <div className="flex items-center gap-2.5">
+                <label className="w-8 h-8 rounded-[5px] shrink-0 cursor-pointer relative overflow-hidden"
                   style={{ background: activeColor, border: '1px solid var(--border)' }}>
                   <input type="color" value={activeColor} onChange={(e) => {
                     const newColor = e.target.value;
@@ -910,7 +910,7 @@ export function FormattingToolbar({ core, store }: FormattingToolbarProps) {
                   }}
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
                 </label>
-                <select className="flex-1 h-7 text-[10px] rounded-[4px] px-1.5 cursor-pointer"
+                <select className="flex-1 h-8 text-[10px] rounded-[5px] px-2 cursor-pointer"
                   style={{ background: 'var(--background)', color: 'var(--foreground)', border: '1px solid var(--border)' }}
                   value={activeWidth} onChange={(e) => {
                     const newWidth = e.target.value;

@@ -140,21 +140,19 @@ async function getHeaderCSSRules(page: Page, colId: string): Promise<string[]> {
 }
 
 async function openCurrencyPopover(page: Page) {
-  // Click the $ currency popover trigger — identified by tooltip "Percentage" being
-  // next to it in the same group. We find the group containing Percentage and click
-  // the first popover trigger (cursor-pointer) in that group's parent TGroup.
   await page.evaluate(() => {
     const toolbar = document.querySelector('[class*="z-[10000]"]');
     if (!toolbar) throw new Error('Toolbar not found');
-    // Find the tooltip wrapper that says "Percentage" — the $ button is in the same TGroup
+    // Find a .group tooltip containing "Percentage" text, then find the nearest
+    // popover trigger (.relative.inline-flex > .cursor-pointer) in the same parent TGroup
     const groups = toolbar.querySelectorAll('.group');
     for (const g of groups) {
       if (g.textContent?.includes('Percentage')) {
-        // Found the number format group — the $ popover is a sibling in the same TGroup
-        const tgroup = g.closest('[class*="gap-[2px]"]');
-        if (tgroup) {
-          const popover = tgroup.querySelector('.relative.inline-flex:not(.group) > .cursor-pointer');
+        let parent: Element | null = g.parentElement;
+        while (parent && parent !== toolbar) {
+          const popover = parent.querySelector('.relative.inline-flex:not(.group) > .cursor-pointer');
           if (popover) { (popover as HTMLElement).click(); return; }
+          parent = parent.parentElement;
         }
       }
     }
