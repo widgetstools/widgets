@@ -845,86 +845,134 @@ export function FormattingToolbar({ core, store }: FormattingToolbarProps) {
             clearBorderKeys(store, core, colIdsRef.current, BORDER_KEYS_ALL, targetRef.current);
           };
 
+          const activeStyle = (fmt as any).borderTopStyle ?? (fmt as any).borderRightStyle ?? (fmt as any).borderBottomStyle ?? (fmt as any).borderLeftStyle ?? 'solid';
+          const widthNum = parseInt(activeWidth) || 1;
+          const hasAny = hasT || hasR || hasB || hasL;
+
+          const updateColor = (newColor: string) => {
+            const patch: Partial<CellStyleProperties> = {};
+            if (hasT) (patch as any).borderTopColor = newColor;
+            if (hasR) (patch as any).borderRightColor = newColor;
+            if (hasB) (patch as any).borderBottomColor = newColor;
+            if (hasL) (patch as any).borderLeftColor = newColor;
+            if (Object.keys(patch).length > 0) doStyle(patch);
+          };
+
+          const updateWidth = (newWidth: string) => {
+            const patch: Partial<CellStyleProperties> = {};
+            if (hasT) (patch as any).borderTopWidth = newWidth;
+            if (hasR) (patch as any).borderRightWidth = newWidth;
+            if (hasB) (patch as any).borderBottomWidth = newWidth;
+            if (hasL) (patch as any).borderLeftWidth = newWidth;
+            if (Object.keys(patch).length > 0) doStyle(patch);
+          };
+
+          const updateStyle = (newStyle: string) => {
+            const patch: Partial<CellStyleProperties> = {};
+            if (hasT) (patch as any).borderTopStyle = newStyle;
+            if (hasR) (patch as any).borderRightStyle = newStyle;
+            if (hasB) (patch as any).borderBottomStyle = newStyle;
+            if (hasL) (patch as any).borderLeftStyle = newStyle;
+            if (Object.keys(patch).length > 0) doStyle(patch);
+          };
+
+          // Border icon: a small square with highlighted edges
+          const BorderIcon = ({ top, right, bottom, left, active }: { top?: boolean; right?: boolean; bottom?: boolean; left?: boolean; active?: boolean }) => (
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <rect x="3" y="3" width="12" height="12" rx="1" stroke="var(--muted-foreground)" strokeWidth="1" strokeDasharray="2 2" opacity={0.3} />
+              {top && <line x1="3" y1="3" x2="15" y2="3" stroke={active ? 'var(--primary)' : 'currentColor'} strokeWidth="2" strokeLinecap="round" />}
+              {right && <line x1="15" y1="3" x2="15" y2="15" stroke={active ? 'var(--primary)' : 'currentColor'} strokeWidth="2" strokeLinecap="round" />}
+              {bottom && <line x1="3" y1="15" x2="15" y2="15" stroke={active ? 'var(--primary)' : 'currentColor'} strokeWidth="2" strokeLinecap="round" />}
+              {left && <line x1="3" y1="3" x2="3" y2="15" stroke={active ? 'var(--primary)' : 'currentColor'} strokeWidth="2" strokeLinecap="round" />}
+            </svg>
+          );
+
           return (
-            <div className="p-4 w-[220px] bg-card"
+            <div style={{ padding: 14, width: 240 }}
               onMouseDown={(e) => { const tag = (e.target as HTMLElement).tagName; if (tag !== 'SELECT' && tag !== 'INPUT') e.preventDefault(); }}>
 
-              {/* ── Visual cell preview with clickable edges ── */}
-              <div className="relative w-full aspect-[3/2] rounded-md mb-4 bg-background border border-dashed border-border">
-                {/* Top border toggle */}
-                <button className="absolute top-0 left-3 right-3 h-[6px] cursor-pointer rounded-t-[2px] transition-all"
-                  style={{ background: hasT ? activeColor : 'transparent' }}
-                  onClick={() => toggleSide('Top')} onMouseDown={(e) => e.preventDefault()} />
-                {/* Right border toggle */}
-                <button className="absolute top-3 bottom-3 right-0 w-[6px] cursor-pointer rounded-r-[2px] transition-all"
-                  style={{ background: hasR ? activeColor : 'transparent' }}
-                  onClick={() => toggleSide('Right')} onMouseDown={(e) => e.preventDefault()} />
-                {/* Bottom border toggle */}
-                <button className="absolute bottom-0 left-3 right-3 h-[6px] cursor-pointer rounded-b-[2px] transition-all"
-                  style={{ background: hasB ? activeColor : 'transparent' }}
-                  onClick={() => toggleSide('Bottom')} onMouseDown={(e) => e.preventDefault()} />
-                {/* Left border toggle */}
-                <button className="absolute top-3 bottom-3 left-0 w-[6px] cursor-pointer rounded-l-[2px] transition-all"
-                  style={{ background: hasL ? activeColor : 'transparent' }}
-                  onClick={() => toggleSide('Left')} onMouseDown={(e) => e.preventDefault()} />
-                {/* Center label */}
-                <div className="absolute inset-0 flex items-center justify-center text-[9px] uppercase tracking-wider text-muted-foreground">
-                  {target === 'header' ? 'Header' : 'Cell'}
+              {/* ── Header ── */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted-foreground)' }}>Borders</span>
+                <div style={{ width: 10, height: 10, borderRadius: '50%', background: activeColor, border: '1px solid var(--border)' }} />
+              </div>
+
+              {/* ── Cell preview ── */}
+              <div style={{
+                position: 'relative', width: '100%', height: 56,
+                borderRadius: 6, marginBottom: 12,
+                background: 'var(--background)',
+                border: '1px dashed var(--border)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                {/* Inner cell box with active borders */}
+                <div style={{
+                  width: '55%', height: '65%', borderRadius: 3,
+                  borderTop: hasT ? `${activeWidth} solid ${activeColor}` : '1px dashed var(--border)',
+                  borderRight: hasR ? `${activeWidth} solid ${activeColor}` : '1px dashed var(--border)',
+                  borderBottom: hasB ? `${activeWidth} solid ${activeColor}` : '1px dashed var(--border)',
+                  borderLeft: hasL ? `${activeWidth} solid ${activeColor}` : '1px dashed var(--border)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <span style={{ fontSize: 9, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--muted-foreground)' }}>
+                    {target === 'header' ? 'Header' : 'Cell'}
+                  </span>
                 </div>
               </div>
 
-              {/* ── Preset buttons ── */}
-              <div className="grid grid-cols-4 gap-2 mb-4">
-                <Button variant="outline" size="xs" className="flex-col gap-1 py-1.5 text-[8px] text-muted-foreground"
-                  onClick={() => setAllBorders(activeWidth)} onMouseDown={(e) => e.preventDefault()}>
-                  <Square size={14} strokeWidth={2} />All
-                </Button>
-                <Button variant="outline" size="xs" className="flex-col gap-1 py-1.5 text-[8px] text-muted-foreground"
-                  onClick={() => { doStyle({ borderTopWidth: activeWidth, borderTopStyle: 'solid', borderTopColor: activeColor, borderBottomWidth: activeWidth, borderBottomStyle: 'solid', borderBottomColor: activeColor }); }}
-                  onMouseDown={(e) => e.preventDefault()}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="3" x2="21" y2="3"/><line x1="3" y1="21" x2="21" y2="21"/></svg>
-                  T+B
-                </Button>
-                <Button variant="outline" size="xs" className="flex-col gap-1 py-1.5 text-[8px] text-muted-foreground"
-                  onClick={() => doStyle({ borderBottomWidth: activeWidth, borderBottomStyle: 'solid', borderBottomColor: activeColor })}
-                  onMouseDown={(e) => e.preventDefault()}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="21" x2="21" y2="21"/></svg>
-                  Bottom
-                </Button>
-                <Button variant="outline" size="xs" className="flex-col gap-1 py-1.5 text-[8px] text-destructive"
-                  onClick={clearAll} onMouseDown={(e) => e.preventDefault()}>
-                  <X size={14} strokeWidth={2} />None
-                </Button>
+              {/* ── Preset buttons: All, Top, Right, Btm, Left, None ── */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 4, marginBottom: 12 }}>
+                <button onClick={() => setAllBorders(activeWidth)} onMouseDown={(e) => e.preventDefault()}
+                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '6px 0', borderRadius: 6, cursor: 'pointer', border: hasAny && hasT && hasR && hasB && hasL ? '1.5px solid var(--primary)' : '1px solid var(--border)', background: hasT && hasR && hasB && hasL ? 'color-mix(in srgb, var(--primary) 10%, transparent)' : 'var(--background)', color: 'var(--foreground)', fontSize: 8, fontWeight: 500 }}>
+                  <BorderIcon top right bottom left active={hasT && hasR && hasB && hasL} />All
+                </button>
+                <button onClick={() => toggleSide('Top')} onMouseDown={(e) => e.preventDefault()}
+                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '6px 0', borderRadius: 6, cursor: 'pointer', border: hasT ? '1.5px solid var(--primary)' : '1px solid var(--border)', background: hasT ? 'color-mix(in srgb, var(--primary) 10%, transparent)' : 'var(--background)', color: 'var(--foreground)', fontSize: 8, fontWeight: 500 }}>
+                  <BorderIcon top active={hasT} />Top
+                </button>
+                <button onClick={() => toggleSide('Right')} onMouseDown={(e) => e.preventDefault()}
+                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '6px 0', borderRadius: 6, cursor: 'pointer', border: hasR ? '1.5px solid var(--primary)' : '1px solid var(--border)', background: hasR ? 'color-mix(in srgb, var(--primary) 10%, transparent)' : 'var(--background)', color: 'var(--foreground)', fontSize: 8, fontWeight: 500 }}>
+                  <BorderIcon right active={hasR} />Right
+                </button>
+                <button onClick={() => toggleSide('Bottom')} onMouseDown={(e) => e.preventDefault()}
+                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '6px 0', borderRadius: 6, cursor: 'pointer', border: hasB ? '1.5px solid var(--primary)' : '1px solid var(--border)', background: hasB ? 'color-mix(in srgb, var(--primary) 10%, transparent)' : 'var(--background)', color: 'var(--foreground)', fontSize: 8, fontWeight: 500 }}>
+                  <BorderIcon bottom active={hasB} />Btm
+                </button>
+                <button onClick={() => toggleSide('Left')} onMouseDown={(e) => e.preventDefault()}
+                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '6px 0', borderRadius: 6, cursor: 'pointer', border: hasL ? '1.5px solid var(--primary)' : '1px solid var(--border)', background: hasL ? 'color-mix(in srgb, var(--primary) 10%, transparent)' : 'var(--background)', color: 'var(--foreground)', fontSize: 8, fontWeight: 500 }}>
+                  <BorderIcon left active={hasL} />Left
+                </button>
+                <button onClick={clearAll} onMouseDown={(e) => e.preventDefault()}
+                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '6px 0', borderRadius: 6, cursor: 'pointer', border: '1px solid var(--border)', background: 'var(--background)', color: 'var(--destructive)', fontSize: 8, fontWeight: 500 }}>
+                  <X size={18} strokeWidth={1.5} />None
+                </button>
               </div>
 
-              {/* ── Color + Width row ── */}
-              <div className="flex items-center gap-2.5">
-                <label className="w-8 h-8 rounded-md shrink-0 cursor-pointer relative overflow-hidden border border-border"
-                  style={{ background: activeColor }}>
-                  <input type="color" value={activeColor} onChange={(e) => {
-                    const newColor = e.target.value;
-                    const patch: Partial<CellStyleProperties> = {};
-                    if (hasT) (patch as any).borderTopColor = newColor;
-                    if (hasR) (patch as any).borderRightColor = newColor;
-                    if (hasB) (patch as any).borderBottomColor = newColor;
-                    if (hasL) (patch as any).borderLeftColor = newColor;
-                    if (Object.keys(patch).length > 0) doStyle(patch);
-                  }}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+              {/* ── Color swatch + Style dropdown + Width ── */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <label style={{
+                  width: 28, height: 28, borderRadius: 6, flexShrink: 0,
+                  cursor: 'pointer', position: 'relative', overflow: 'hidden',
+                  background: activeColor, border: '1px solid var(--border)',
+                }}>
+                  <input type="color" value={activeColor} onChange={(e) => updateColor(e.target.value)}
+                    style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }} />
                 </label>
-                <select className="flex-1 h-8 text-[10px] rounded-md px-2 cursor-pointer bg-background text-foreground border border-border"
-                  value={activeWidth} onChange={(e) => {
-                    const newWidth = e.target.value;
-                    const patch: Partial<CellStyleProperties> = {};
-                    if (hasT) (patch as any).borderTopWidth = newWidth;
-                    if (hasR) (patch as any).borderRightWidth = newWidth;
-                    if (hasB) (patch as any).borderBottomWidth = newWidth;
-                    if (hasL) (patch as any).borderLeftWidth = newWidth;
-                    if (Object.keys(patch).length > 0) doStyle(patch);
-                  }}>
-                  <option value="1px">1px - Thin</option>
-                  <option value="2px">2px - Medium</option>
-                  <option value="3px">3px - Thick</option>
+                <select
+                  style={{ flex: 1, height: 28, fontSize: 10, borderRadius: 6, padding: '0 8px', cursor: 'pointer', background: 'var(--background)', color: 'var(--foreground)', border: '1px solid var(--border)' }}
+                  value={activeStyle} onChange={(e) => updateStyle(e.target.value)}>
+                  <option value="solid">Solid</option>
+                  <option value="dashed">Dashed</option>
+                  <option value="dotted">Dotted</option>
+                  <option value="double">Double</option>
+                </select>
+                <select
+                  style={{ width: 42, height: 28, fontSize: 10, borderRadius: 6, padding: '0 4px', cursor: 'pointer', background: 'var(--background)', color: 'var(--foreground)', border: '1px solid var(--border)', textAlign: 'center' }}
+                  value={widthNum.toString()} onChange={(e) => updateWidth(e.target.value + 'px')}>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
                 </select>
               </div>
             </div>
