@@ -27,7 +27,7 @@ const darkTheme = themeQuartz.withParams({
   headerBackgroundColor: '#1e2329',
   oddRowBackgroundColor: '#161a1e',
   rowHoverColor: '#1e2329',
-  selectedRowBackgroundColor: '#f0b90b14',
+  selectedRowBackgroundColor: '#14b8a614',
   borderColor: '#313944',
 });
 
@@ -38,7 +38,7 @@ const lightTheme = themeQuartz.withParams({
   headerBackgroundColor: '#f3f3f3',
   oddRowBackgroundColor: '#ffffff',
   rowHoverColor: '#f3f3f3',
-  selectedRowBackgroundColor: '#d9770614',
+  selectedRowBackgroundColor: '#0d948814',
   borderColor: '#e5e5e5',
 });
 

@@ -59,9 +59,9 @@
   --popover: #161a1e;
   --popover-foreground: #eaecef;
 
-  /* ── Brand / Primary (amber) ── */
-  --primary: #f0b90b;
-  --primary-foreground: #0b0e11;
+  /* ── Brand / Primary (teal) ── */
+  --primary: #14b8a6;
+  --primary-foreground: #ffffff;
 
   /* ── Secondary (surface.secondary) ── */
   --secondary: #1e2329;
@@ -82,7 +82,7 @@
   /* ── Borders ── */
   --border: #313944;         /* border.primary */
   --input: #3e4754;          /* border.secondary */
-  --ring: #f0b90b;
+  --ring: #14b8a6;
 
   /* ── Radius ── */
   --radius: 4px;
@@ -121,7 +121,7 @@
   --card-foreground: #3b3b3b;
   --popover: #ffffff;
   --popover-foreground: #3b3b3b;
-  --primary: #d97706;
+  --primary: #0d9488;
   --primary-foreground: #ffffff;
   --secondary: #f3f3f3;
   --secondary-foreground: #616161;
@@ -133,7 +133,7 @@
   --destructive-foreground: #ffffff;
   --border: #e5e5e5;
   --input: #d4d4d4;
-  --ring: #d97706;
+  --ring: #0d9488;
   --bn-bg: #f8f8f8;
   --bn-bg1: #ffffff;
   --bn-bg2: #f3f3f3;
