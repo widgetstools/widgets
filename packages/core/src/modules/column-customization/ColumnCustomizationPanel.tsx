@@ -24,7 +24,11 @@ const ColumnEditor = React.memo(function ColumnEditor({
   onUpdate: (patch: Partial<ColumnAssignment>) => void;
   onGoToTemplate: (tplId: string) => void;
 }) {
-  const tpl = assignment.templateId ? templates[assignment.templateId] : undefined;
+  // Resolve all assigned templates (templateIds array + deprecated templateId)
+  const assignedTplIds = useMemo(() => {
+    const ids = assignment.templateIds ?? (assignment.templateId ? [assignment.templateId] : []);
+    return ids.filter((id) => templates[id]);
+  }, [assignment, templates]);
 
   const templateOptions = useMemo(() => [
     { value: '', label: 'None' },
@@ -49,28 +53,61 @@ const ColumnEditor = React.memo(function ColumnEditor({
 
       <div style={{ height: 1, background: 'var(--gc-border)', margin: '8px 0' }} />
 
-      {/* Template assignment */}
-      <SelectField label="Style Template" value={assignment.templateId ?? ''}
-        onChange={(v) => onUpdate({ templateId: v || undefined })}
-        options={templateOptions} />
+      {/* Template assignment — add new template */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+        <div style={{ fontSize: 10, fontWeight: 500, color: 'var(--gc-text-dim)', flex: '0 0 auto' }}>Add Template</div>
+        <select
+          style={{ flex: 1, height: 26, fontSize: 10, padding: '0 6px', borderRadius: 4, border: '1px solid var(--gc-border)', background: 'var(--gc-bg)', color: 'var(--gc-text)', fontFamily: 'var(--gc-font)' }}
+          value=""
+          onChange={(e) => {
+            const tplId = e.target.value;
+            if (!tplId) return;
+            const existing = assignment.templateIds ?? (assignment.templateId ? [assignment.templateId] : []);
+            if (!existing.includes(tplId)) {
+              onUpdate({ templateIds: [...existing, tplId] });
+            }
+          }}
+        >
+          <option value="" disabled>Select a template...</option>
+          {templateOptions.filter(o => o.value && !assignedTplIds.includes(o.value)).map(o => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
+        </select>
+      </div>
 
-      {tpl ? (
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '8px 10px', marginTop: 6, borderRadius: 4,
-          background: 'var(--gc-accent-muted)', border: '1px solid rgba(240,185,11,0.15)',
-        }}>
-          <div>
-            <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--gc-text)' }}>{tpl.name}</div>
-            {tpl.description && <div style={{ fontSize: 9, color: 'var(--gc-text-dim)', marginTop: 2 }}>{tpl.description}</div>}
-          </div>
-          <Button variant="outline" size="sm" onClick={() => onGoToTemplate(tpl.id)}>
-            Edit Template →
-          </Button>
+      {/* Show assigned templates */}
+      {assignedTplIds.length > 0 ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          {assignedTplIds.map((tplId) => {
+            const tpl = templates[tplId];
+            if (!tpl) return null;
+            return (
+              <div key={tplId} style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '6px 10px', borderRadius: 4,
+                background: 'var(--gc-accent-muted)', border: '1px solid rgba(240,185,11,0.15)',
+              }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--gc-text)' }}>{tpl.name}</div>
+                  {tpl.description && <div style={{ fontSize: 9, color: 'var(--gc-text-dim)', marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tpl.description}</div>}
+                </div>
+                <div style={{ display: 'flex', gap: 3, marginLeft: 6 }}>
+                  <Button variant="outline" size="sm" style={{ fontSize: 9 }} onClick={() => onGoToTemplate(tplId)}>Edit</Button>
+                  <Button variant="ghost" size="icon-sm" style={{ color: 'var(--gc-danger)' }}
+                    onClick={() => {
+                      const updated = assignedTplIds.filter(id => id !== tplId);
+                      onUpdate({ templateIds: updated.length > 0 ? updated : undefined, templateId: undefined });
+                    }}>
+                    <Icons.Trash size={10} />
+                  </Button>
+                </div>
+              </div>
+            );
+          })}
         </div>
       ) : (
-        <div style={{ fontSize: 10, color: 'var(--gc-text-dim)', marginTop: 6, padding: '6px 10px', background: 'var(--gc-surface-hover)', borderRadius: 4 }}>
-          No template assigned. Go to the <strong>Templates</strong> tab to create one.
+        <div style={{ fontSize: 10, color: 'var(--gc-text-dim)', marginTop: 4, padding: '6px 10px', background: 'var(--gc-surface-hover)', borderRadius: 4 }}>
+          No templates assigned. Select one above or go to the <strong>Templates</strong> tab.
         </div>
       )}
     </div>
@@ -133,13 +170,16 @@ export function ColumnCustomizationPanel({ gridId }: SettingsPanelProps) {
           <div style={{ marginTop: 10 }}>
             {assignedColIds.map((colId) => {
               const a = state.assignments[colId];
-              const tpl = a.templateId ? templates[a.templateId] : undefined;
+              const tplIds = a.templateIds ?? (a.templateId ? [a.templateId] : []);
+              const assignedTpls = tplIds.map(id => templates[id]).filter(Boolean);
               return (
                 <div key={colId} className="gc-col-item" data-active={selectedColId === colId}
                   onClick={() => setSelectedColId(selectedColId === colId ? null : colId)}>
                   <div className="gc-col-dot" />
                   <span style={{ flex: 1, fontWeight: 500 }}>{a.headerName ?? colId}</span>
-                  {tpl && <span style={{ fontSize: 9, padding: '1px 5px', borderRadius: 3, background: 'var(--gc-accent-muted)', color: 'var(--gc-accent)' }}>{tpl.name}</span>}
+                  {assignedTpls.map(tpl => (
+                    <span key={tpl.id} style={{ fontSize: 9, padding: '1px 5px', borderRadius: 3, background: 'var(--gc-accent-muted)', color: 'var(--gc-accent)' }}>{tpl.name}</span>
+                  ))}
                   {a.initialPinned && <span style={{ fontSize: 9, padding: '1px 4px', borderRadius: 3, background: 'var(--gc-accent-muted)', color: 'var(--gc-accent)' }}>PIN</span>}
                   <Button variant="ghost" size="icon-sm"
                     onClick={(e) => { e.stopPropagation(); removeAssignment(colId); }}>

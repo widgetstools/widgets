@@ -235,9 +235,9 @@ function ValueFormatterField({ value, onChange }: { value: string; onChange: (v:
 // ─── Template Editor ─────────────────────────────────────────────────────────
 
 const TemplateEditor = React.memo(function TemplateEditor({
-  template, columnCount, onUpdate, onDelete, onBulkApply,
+  template, columnCount, columnNames, onUpdate, onDelete, onBulkApply,
 }: {
-  template: ColumnTemplate; columnCount: number;
+  template: ColumnTemplate; columnCount: number; columnNames: string[];
   onUpdate: (patch: Partial<ColumnTemplate>) => void;
   onDelete: () => void; onBulkApply: () => void;
 }) {
@@ -250,9 +250,16 @@ const TemplateEditor = React.memo(function TemplateEditor({
           <Button variant="ghost" size="icon-sm" style={{ color: 'var(--gc-danger)' }} onClick={onDelete}><Icons.Trash size={11} /></Button>
         </div>
       </div>
-      <div style={{ fontSize: 10, color: 'var(--gc-text-dim)', marginBottom: 10 }}>
-        Used by {columnCount} column{columnCount !== 1 ? 's' : ''}
+      <div style={{ fontSize: 10, color: 'var(--gc-text-dim)', marginBottom: columnNames.length > 0 ? 4 : 10 }}>
+        Applied to {columnCount} column{columnCount !== 1 ? 's' : ''}
       </div>
+      {columnNames.length > 0 && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3, marginBottom: 10 }}>
+          {columnNames.map((n) => (
+            <span key={n} style={{ padding: '2px 6px', borderRadius: 3, background: 'var(--gc-accent-muted)', color: 'var(--gc-accent)', fontSize: 9, fontWeight: 500 }}>{n}</span>
+          ))}
+        </div>
+      )}
 
       {/* Identity */}
       <TextField label="Name" value={template.name} onChange={(v) => onUpdate({ name: v })} />
@@ -304,15 +311,23 @@ export function ColumnTemplatesPanel({ gridId }: SettingsPanelProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [bulkId, setBulkId] = useState<string | null>(null);
 
-  // Read column assignments from column-customization module to show usage counts
+  // Read column assignments to show usage counts and column names per template
   const colCustState = store.getState().modules['column-customization'] as any;
-  const assignments: Record<string, { templateId?: string }> = colCustState?.assignments ?? {};
-  const colCounts = useMemo(() => {
-    const c: Record<string, number> = {};
+  const assignments: Record<string, { colId?: string; templateId?: string; templateIds?: string[]; headerName?: string }> = colCustState?.assignments ?? {};
+  const { colCounts, colNames } = useMemo(() => {
+    const counts: Record<string, number> = {};
+    const names: Record<string, string[]> = {};
     for (const a of Object.values(assignments)) {
-      if (a.templateId) c[a.templateId] = (c[a.templateId] ?? 0) + 1;
+      const colName = a.headerName ?? a.colId ?? '?';
+      // Check templateIds array (primary) and deprecated templateId
+      const tplIds = a.templateIds ?? (a.templateId ? [a.templateId] : []);
+      for (const tplId of tplIds) {
+        counts[tplId] = (counts[tplId] ?? 0) + 1;
+        if (!names[tplId]) names[tplId] = [];
+        names[tplId].push(colName);
+      }
     }
-    return c;
+    return { colCounts: counts, colNames: names };
   }, [assignments]);
 
   const addTemplate = useCallback(() => {
@@ -377,24 +392,36 @@ export function ColumnTemplatesPanel({ gridId }: SettingsPanelProps) {
         {Object.keys(state.templates).length === 0 ? (
           <div className="gc-empty">No templates. Create one to define reusable column styles.</div>
         ) : (
-          Object.values(state.templates).map((tpl) => (
-            <div key={tpl.id} className="gc-rule-card" style={{ cursor: 'pointer' }}
-              onClick={() => setEditingId(editingId === tpl.id ? null : tpl.id)}>
-              <div className="gc-rule-card-header">
-                <div className="gc-rule-card-title">{tpl.name}</div>
-                <span style={{ fontSize: 10, color: 'var(--gc-text-dim)' }}>
-                  {colCounts[tpl.id] ?? 0} col{(colCounts[tpl.id] ?? 0) !== 1 ? 's' : ''}
-                </span>
+          Object.values(state.templates).map((tpl) => {
+            const count = colCounts[tpl.id] ?? 0;
+            const names = colNames[tpl.id] ?? [];
+            return (
+              <div key={tpl.id} className="gc-rule-card" style={{ cursor: 'pointer' }}
+                onClick={() => setEditingId(editingId === tpl.id ? null : tpl.id)}>
+                <div className="gc-rule-card-header">
+                  <div className="gc-rule-card-title">{tpl.name}</div>
+                  <span style={{ fontSize: 10, color: count > 0 ? 'var(--gc-accent)' : 'var(--gc-text-dim)', fontWeight: count > 0 ? 500 : 400 }}>
+                    {count} column{count !== 1 ? 's' : ''}
+                  </span>
+                </div>
+                {names.length > 0 && (
+                  <div style={{ fontSize: 9, color: 'var(--gc-text-dim)', padding: '2px 10px 6px', display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+                    {names.map((n) => (
+                      <span key={n} style={{ padding: '1px 5px', borderRadius: 3, background: 'var(--gc-accent-muted)', color: 'var(--gc-accent)', fontSize: 9 }}>{n}</span>
+                    ))}
+                  </div>
+                )}
+                {tpl.description && <div className="gc-rule-card-body">{tpl.description}</div>}
               </div>
-              {tpl.description && <div className="gc-rule-card-body">{tpl.description}</div>}
-            </div>
-          ))
+            );
+          })
         )}
       </div>
 
       {editingTpl && (
         <TemplateEditor key={editingId} template={editingTpl}
           columnCount={colCounts[editingTpl.id] ?? 0}
+          columnNames={colNames[editingTpl.id] ?? []}
           onUpdate={(patch) => updateTemplate(editingTpl.id, patch)}
           onDelete={() => deleteTemplate(editingTpl.id)}
           onBulkApply={() => setBulkId(editingTpl.id)} />
