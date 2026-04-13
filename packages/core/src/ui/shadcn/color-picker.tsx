@@ -1,10 +1,8 @@
 import { useState, useCallback, useEffect, useRef, type ReactNode } from 'react';
-import { Droplet, Check, Pipette } from 'lucide-react';
+import { X, Check, Pipette } from 'lucide-react';
 import { cn } from './utils';
 
 // ─── Color Palette ──────────────────────────────────────────────────────────
-// 10 hue columns × 7 shade rows (row 0 = vivid, rows 1-6 = light→dark)
-// Plus a grayscale row at the top. Inspired by DaVinci Resolve / Google Sheets.
 
 const GRAYSCALE = [
   '#ffffff', '#e5e5e5', '#c4c4c4', '#a0a0a0', '#7a7a7a',
@@ -12,20 +10,16 @@ const GRAYSCALE = [
 ];
 
 const HUE_GRID = [
-  // Row 0: vivid (saturated)
+  // Row 0: vivid saturated
   ['#ef4444', '#f97316', '#eab308', '#22c55e', '#14b8a6', '#06b6d4', '#3b82f6', '#6366f1', '#a855f7', '#ec4899'],
-  // Row 1: lighter tints
-  ['#fca5a5', '#fdba74', '#fde047', '#86efac', '#5eead4', '#67e8f9', '#93c5fd', '#a5b4fc', '#d8b4fe', '#f9a8d4'],
-  // Row 2: pastel
-  ['#fecaca', '#fed7aa', '#fef08a', '#bbf7d0', '#99f6e4', '#a5f3fc', '#bfdbfe', '#c7d2fe', '#e9d5ff', '#fbcfe8'],
-  // Row 3: very light
-  ['#fee2e2', '#ffedd5', '#fef9c3', '#dcfce7', '#ccfbf1', '#cffafe', '#dbeafe', '#e0e7ff', '#f3e8ff', '#fce7f3'],
-  // Row 4: mid-dark
+  // Row 1: medium-dark
   ['#dc2626', '#ea580c', '#ca8a04', '#16a34a', '#0d9488', '#0891b2', '#2563eb', '#4f46e5', '#9333ea', '#db2777'],
-  // Row 5: dark
-  ['#b91c1c', '#c2410c', '#a16207', '#15803d', '#0f766e', '#0e7490', '#1d4ed8', '#4338ca', '#7e22ce', '#be185d'],
-  // Row 6: very dark
-  ['#991b1b', '#9a3412', '#854d0e', '#166534', '#115e59', '#155e75', '#1e40af', '#3730a3', '#6b21a8', '#9d174d'],
+  // Row 2: light tints
+  ['#fca5a5', '#fdba74', '#fde047', '#86efac', '#5eead4', '#67e8f9', '#93c5fd', '#a5b4fc', '#d8b4fe', '#f9a8d4'],
+  // Row 3: pastel
+  ['#fecaca', '#fed7aa', '#fef08a', '#bbf7d0', '#99f6e4', '#a5f3fc', '#bfdbfe', '#c7d2fe', '#e9d5ff', '#fbcfe8'],
+  // Row 4: very light
+  ['#fee2e2', '#ffedd5', '#fef9c3', '#dcfce7', '#ccfbf1', '#cffafe', '#dbeafe', '#e0e7ff', '#f3e8ff', '#fce7f3'],
 ];
 
 const LS_KEY = 'gc-recent-colors';
@@ -46,21 +40,28 @@ function addRecentColor(color: string): void {
 
 // ─── Swatch ─────────────────────────────────────────────────────────────────
 
-function Swatch({ color, selected, size = 22, onClick }: {
-  color: string; selected: boolean; size?: number; onClick: () => void;
+const SWATCH_SIZE = 28;
+const SWATCH_GAP = 3;
+const SWATCH_RADIUS = 4;
+
+function Swatch({ color, selected, onClick }: {
+  color: string; selected: boolean; onClick: () => void;
 }) {
   return (
     <button
       onClick={onClick}
       onMouseDown={(e) => e.preventDefault()}
       title={color}
-      className={cn(
-        'rounded-[2px] cursor-pointer transition-all duration-75 shrink-0',
-        !selected && 'hover:scale-110 hover:z-10 hover:relative',
-      )}
+      className="cursor-pointer transition-all duration-100 shrink-0"
       style={{
-        width: size, height: size, background: color,
-        ...(selected ? { boxShadow: `0 0 0 1.5px var(--card), 0 0 0 3px var(--primary)`, transform: 'scale(1.1)', zIndex: 10, position: 'relative' as const } : undefined),
+        width: SWATCH_SIZE, height: SWATCH_SIZE,
+        borderRadius: SWATCH_RADIUS,
+        background: color,
+        outline: selected ? '2.5px solid var(--primary)' : 'none',
+        outlineOffset: selected ? 1 : 0,
+        transform: selected ? 'scale(1.08)' : undefined,
+        zIndex: selected ? 10 : undefined,
+        position: selected ? 'relative' as const : undefined,
       }}
     />
   );
@@ -69,29 +70,22 @@ function Swatch({ color, selected, size = 22, onClick }: {
 // ─── ColorPicker ────────────────────────────────────────────────────────────
 
 export interface ColorPickerProps {
-  /** Current color value (hex string) */
   value?: string;
-  /** Called when a color is confirmed (Apply clicked or swatch double-clicked) */
   onChange: (color: string | undefined) => void;
-  /** Show "No Color" / clear option */
   allowClear?: boolean;
-  /** Compact mode — smaller swatches */
   compact?: boolean;
 }
 
-export function ColorPicker({ value, onChange, allowClear = true, compact = false }: ColorPickerProps) {
+export function ColorPicker({ value, onChange, allowClear = true }: ColorPickerProps) {
   const [draft, setDraft] = useState(value || '');
   const [hexInput, setHexInput] = useState(value || '');
   const [recentColors, setRecentColors] = useState<string[]>(getRecentColors);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Sync when external value changes
   useEffect(() => {
     setDraft(value || '');
     setHexInput(value || '');
   }, [value]);
-
-  const sz = compact ? 20 : 22;
 
   const selectColor = useCallback((c: string) => {
     setDraft(c);
@@ -120,55 +114,61 @@ export function ColorPicker({ value, onChange, allowClear = true, compact = fals
     }
   }, [hexInput, selectColor]);
 
-  // Reduced grid: grayscale + rows 0,1,3,4,6 from HUE_GRID (skip rows 2 and 5)
-  const filteredHueRows = [HUE_GRID[0], HUE_GRID[1], HUE_GRID[3], HUE_GRID[4], HUE_GRID[6]];
+  const gridStyle = { display: 'flex', gap: SWATCH_GAP, marginBottom: SWATCH_GAP };
 
   return (
-    <div className="p-3.5" onMouseDown={(e) => {
+    <div style={{ padding: 12 }} onMouseDown={(e) => {
       if ((e.target as HTMLElement).tagName !== 'INPUT') e.preventDefault();
     }}>
       {/* ── Grayscale row ── */}
-      <div className="flex gap-[2px] mb-[2px]">
+      <div style={gridStyle}>
         {GRAYSCALE.map((c) => (
-          <Swatch key={c} color={c} size={sz} selected={draft === c} onClick={() => selectColor(c)} />
+          <Swatch key={c} color={c} selected={draft === c} onClick={() => selectColor(c)} />
         ))}
       </div>
 
-      {/* ── Hue grid (6 rows: grayscale + 5 hue rows) ── */}
-      {filteredHueRows.map((row, ri) => (
-        <div key={ri} className="flex gap-[2px] mb-[2px]">
+      {/* ── Hue grid ── */}
+      {HUE_GRID.map((row, ri) => (
+        <div key={ri} style={gridStyle}>
           {row.map((c) => (
-            <Swatch key={c} color={c} size={sz} selected={draft === c} onClick={() => selectColor(c)} />
+            <Swatch key={c} color={c} selected={draft === c} onClick={() => selectColor(c)} />
           ))}
         </div>
       ))}
 
       {/* ── Recent colors ── */}
       {recentColors.length > 0 && (
-        <div className="mt-3 pt-2.5" style={{ borderTop: '1px solid var(--border)' }}>
-          <div className="text-[8px] uppercase tracking-[0.12em] mb-1.5 font-medium" style={{ color: 'var(--muted-foreground)' }}>Recent</div>
-          <div className="flex gap-[2px]">
+        <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
+          <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: 'var(--muted-foreground)', marginBottom: 8 }}>
+            Recent
+          </div>
+          <div style={{ display: 'flex', gap: SWATCH_GAP }}>
             {recentColors.map((c) => (
-              <Swatch key={c} color={c} size={sz} selected={draft === c} onClick={() => selectColor(c)} />
+              <Swatch key={c} color={c} selected={draft === c} onClick={() => selectColor(c)} />
             ))}
           </div>
         </div>
       )}
 
-      {/* ── Bottom: hex input + preview + native picker + actions ── */}
-      <div className="flex items-center gap-2.5 mt-3.5 pt-3" style={{ borderTop: '1px solid var(--border)' }}>
-        {/* Native color picker trigger — shows current color + eyedropper icon */}
+      {/* ── Bottom bar: pipette + hex input + clear + confirm ── */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
+        {/* Pipette / native color picker */}
         <label
-          className="w-7 h-7 rounded-[4px] shrink-0 cursor-pointer relative overflow-hidden flex items-center justify-center group/picker"
-          style={{ background: draft || 'var(--card)', border: '1px solid var(--border)' }}
+          style={{
+            width: 32, height: 32, borderRadius: SWATCH_RADIUS,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer', position: 'relative', overflow: 'hidden',
+            background: draft || 'var(--accent)',
+            border: '1px solid var(--border)',
+          }}
           title="Pick custom color"
         >
-          <Pipette size={11} strokeWidth={1.5} className="transition-colors drop-shadow-sm" style={{ color: 'var(--muted-foreground)' }} />
+          <Pipette size={14} strokeWidth={1.5} style={{ color: 'var(--foreground)', opacity: 0.7 }} />
           <input
             type="color"
             value={draft || '#000000'}
             onChange={(e) => selectColor(e.target.value)}
-            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }}
           />
         </label>
 
@@ -183,33 +183,50 @@ export function ColorPicker({ value, onChange, allowClear = true, compact = fals
             if (e.key === 'Enter') { commitHex(); confirm(); }
           }}
           placeholder="#000000"
-          className="flex-1 h-7 px-2 rounded-[4px] text-[11px] font-mono min-w-0"
-          style={{ background: 'var(--background)', color: 'var(--foreground)', border: '1px solid var(--border)', outline: 'none' }}
+          style={{
+            flex: 1, height: 32, padding: '0 10px',
+            borderRadius: SWATCH_RADIUS,
+            fontSize: 11, fontFamily: "'JetBrains Mono', monospace",
+            background: 'var(--background)', color: 'var(--foreground)',
+            border: '1px solid var(--border)', outline: 'none',
+            minWidth: 0,
+          }}
         />
 
-        {/* No color — prominent clear button */}
+        {/* Clear (×) */}
         {allowClear && (
           <button
             onClick={clear}
             onMouseDown={(e) => e.preventDefault()}
-            className="h-7 px-2 rounded-[4px] shrink-0 cursor-pointer transition-all flex items-center justify-center gap-1.5"
-            style={{ background: 'color-mix(in srgb, var(--destructive) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--destructive) 25%, transparent)' }}
             title="No color"
+            style={{
+              width: 32, height: 32, borderRadius: SWATCH_RADIUS,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer', transition: 'all 150ms',
+              background: 'var(--accent)',
+              border: '1px solid var(--border)',
+              color: 'var(--foreground)',
+            }}
           >
-            <Droplet size={11} strokeWidth={2} style={{ color: 'var(--destructive)' }} />
-            <span className="text-[9px] font-medium tracking-wide" style={{ color: 'var(--destructive)' }}>Clear</span>
+            <X size={14} strokeWidth={2} />
           </button>
         )}
 
-        {/* Confirm */}
+        {/* Confirm (✓) */}
         <button
           onClick={confirm}
           onMouseDown={(e) => e.preventDefault()}
-          className="h-7 w-7 rounded-[4px] shrink-0 transition-all cursor-pointer flex items-center justify-center"
-          style={draft ? { background: 'var(--primary)', color: 'var(--primary-foreground)' } : { background: 'var(--accent)', color: 'var(--muted-foreground)' }}
           title="Apply color"
+          style={{
+            width: 32, height: 32, borderRadius: SWATCH_RADIUS,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer', transition: 'all 150ms',
+            background: draft ? 'var(--foreground)' : 'var(--accent)',
+            color: draft ? 'var(--background)' : 'var(--muted-foreground)',
+            border: '1px solid var(--border)',
+          }}
         >
-          <Check size={13} strokeWidth={2.5} />
+          <Check size={14} strokeWidth={2.5} />
         </button>
       </div>
     </div>
@@ -217,12 +234,10 @@ export function ColorPicker({ value, onChange, allowClear = true, compact = fals
 }
 
 // ─── ColorPickerPopover ─────────────────────────────────────────────────────
-// Wraps ColorPicker in a Popover with a trigger button.
 
 export interface ColorPickerPopoverProps {
   value?: string;
   onChange: (color: string | undefined) => void;
-  /** Trigger content (icon) */
   icon: ReactNode;
   disabled?: boolean;
   allowClear?: boolean;
@@ -230,7 +245,6 @@ export interface ColorPickerPopoverProps {
 }
 
 export function ColorPickerPopover({ value, onChange, icon, disabled, allowClear = true, compact }: ColorPickerPopoverProps) {
-  // Import Popover inline to avoid circular deps
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -263,7 +277,7 @@ export function ColorPickerPopover({ value, onChange, icon, disabled, allowClear
         <button
           disabled={disabled}
           className={cn(
-            'shrink-0 rounded-[3px] gc-tbtn transition-all duration-150 inline-flex items-center justify-center w-6 h-6',
+            'shrink-0 rounded-[3px] gc-tbtn transition-all duration-150 inline-flex items-center justify-center w-7 h-7',
             disabled && 'opacity-25 pointer-events-none',
           )}
         >
@@ -277,13 +291,19 @@ export function ColorPickerPopover({ value, onChange, icon, disabled, allowClear
         </button>
       </div>
       {open && (
-        <div className="absolute z-50 top-full mt-1 left-0 rounded-lg shadow-lg"
-          style={{ border: '1px solid var(--border)', background: 'var(--card)' }}>
+        <div
+          className="absolute z-50 top-full mt-1 left-0"
+          style={{
+            borderRadius: 12,
+            border: '1px solid var(--border)',
+            background: 'var(--card)',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+          }}
+        >
           <ColorPicker
             value={value}
             onChange={handleChange}
             allowClear={allowClear}
-            compact={compact}
           />
         </div>
       )}
