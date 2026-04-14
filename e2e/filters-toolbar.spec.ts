@@ -2,7 +2,7 @@ import { test, expect, Page } from '@playwright/test';
 
 /**
  * E2E tests for the Filters Toolbar feature.
- * Tests: empty state, capture, toggle on/off, OR logic, context menu,
+ * Tests: empty state, capture, toggle on/off, AND logic, hover icons,
  * rename, remove, save/persist.
  */
 
@@ -22,26 +22,32 @@ async function clearPersistedState(page: Page) {
 }
 
 async function switchToFilters(page: Page) {
-  const switcher = page.locator('.gc-toolbar-switcher');
-  // Hover above the toolbar to reveal the pill rail
-  await switcher.hover({ position: { x: 100, y: 5 } });
-  await page.waitForTimeout(400);
-  const filtersPill = page.locator('.gc-pill-label', { hasText: 'Filters' });
-  await filtersPill.click();
+  // Open the toolbar switcher dropdown and select Filters
+  const trigger = page.locator('.gc-switcher-trigger');
+  await trigger.click();
+  await page.waitForTimeout(200);
+  const filtersItem = page.locator('.gc-switcher-item:nth-child(2)');
+  await filtersItem.click();
   await page.waitForTimeout(400);
 }
 
-function filterButtons(page: Page) {
-  return page.locator('button[title*="click to toggle"]');
+/** Locator for filter pill containers */
+function filterPills(page: Page) {
+  return page.locator('.gc-filter-pill');
 }
 
-async function getFilterButtonCount(page: Page): Promise<number> {
-  return filterButtons(page).count();
+/** The clickable toggle button inside a pill */
+function filterToggleBtn(page: Page, index: number) {
+  return filterPills(page).nth(index).locator('.gc-filter-pill-btn');
+}
+
+async function getFilterPillCount(page: Page): Promise<number> {
+  return filterPills(page).count();
 }
 
 async function clickAddFilter(page: Page) {
-  // The + button has tooltip "Capture current filter"
-  const addBtn = page.locator('.gc-toolbar-content button').first();
+  // The + button in the filters actions area
+  const addBtn = page.locator('.gc-filters-add-btn');
   await addBtn.click();
   await page.waitForTimeout(400);
 }
@@ -122,43 +128,6 @@ async function setFilterViaApi(page: Page, filterModel: Record<string, any>) {
   return result;
 }
 
-/**
- * Alternative: set filter via column header menu UI for set filters.
- */
-async function setSetFilterViaUI(page: Page, colId: string, values: string[]) {
-  // Right-click the column header to open context menu, then use filter
-  const header = page.locator(`.ag-header-cell[col-id="${colId}"]`);
-
-  // Click the header menu button (three dots)
-  const menuBtn = header.locator('.ag-header-cell-menu-button');
-  // Make it visible by hovering on header
-  await header.hover();
-  await page.waitForTimeout(300);
-  await menuBtn.click();
-  await page.waitForTimeout(500);
-
-  // Click the Filter tab in the column menu
-  const filterTab = page.locator('.ag-tabs-header .ag-tab').nth(1);
-  await filterTab.click();
-  await page.waitForTimeout(300);
-
-  // First, deselect all
-  const selectAll = page.locator('.ag-set-filter-list .ag-set-filter-item').first();
-  await selectAll.click();
-  await page.waitForTimeout(200);
-
-  // Select specific values
-  for (const val of values) {
-    const item = page.locator('.ag-set-filter-item').filter({ hasText: val });
-    await item.click();
-    await page.waitForTimeout(100);
-  }
-
-  // Close the menu by pressing Escape
-  await page.keyboard.press('Escape');
-  await page.waitForTimeout(500);
-}
-
 // ─── Tests ───────────────────────────────────────────────────────────────────
 
 test.describe('Filters Toolbar', () => {
@@ -173,11 +142,11 @@ test.describe('Filters Toolbar', () => {
     await switchToFilters(page);
 
     // The + button should exist
-    const addBtn = page.locator('.gc-toolbar-content button').first();
+    const addBtn = page.locator('.gc-filters-add-btn');
     await expect(addBtn).toBeVisible();
 
-    // No toggle buttons should exist
-    const count = await getFilterButtonCount(page);
+    // No filter pills should exist
+    const count = await getFilterPillCount(page);
     expect(count).toBe(0);
   });
 
@@ -187,14 +156,14 @@ test.describe('Filters Toolbar', () => {
     // Click + with no grid filters active
     await clickAddFilter(page);
 
-    // Still no toggle buttons
-    const count = await getFilterButtonCount(page);
+    // Still no filter pills
+    const count = await getFilterPillCount(page);
     expect(count).toBe(0);
   });
 
   test('captures current filter as toggle button', async ({ page }) => {
     // Set a filter on the grid programmatically
-    const result = await setFilterViaApi(page, {
+    await setFilterViaApi(page, {
       side: { filterType: 'set', values: ['BUY'] },
     });
 
@@ -204,14 +173,15 @@ test.describe('Filters Toolbar', () => {
     // Click + to capture
     await clickAddFilter(page);
 
-    // Verify a toggle button appeared
-    const count = await getFilterButtonCount(page);
+    // Verify a pill appeared
+    const count = await getFilterPillCount(page);
     expect(count).toBe(1);
 
-    // Verify the button label contains the filter info
-    const btn = filterButtons(page).first();
-    const title = await btn.getAttribute('title');
-    expect(title).toContain('click to toggle');
+    // Verify the pill has the filter icon and label text
+    const pill = filterPills(page).first();
+    await expect(pill).toBeVisible();
+    const text = await pill.textContent();
+    expect(text).toBeTruthy();
   });
 
   test('toggle off removes filter from grid', async ({ page }) => {
@@ -227,8 +197,8 @@ test.describe('Filters Toolbar', () => {
     await switchToFilters(page);
     await clickAddFilter(page);
 
-    // Toggle off
-    const btn = filterButtons(page).first();
+    // Toggle off by clicking the toggle button inside the pill
+    const btn = filterToggleBtn(page, 0);
     await btn.click();
     await page.waitForTimeout(500);
 
@@ -249,7 +219,7 @@ test.describe('Filters Toolbar', () => {
     await switchToFilters(page);
     await clickAddFilter(page);
 
-    const btn = filterButtons(page).first();
+    const btn = filterToggleBtn(page, 0);
     await btn.click(); // toggle off
     await page.waitForTimeout(500);
 
@@ -264,7 +234,7 @@ test.describe('Filters Toolbar', () => {
     expect(reFilteredCount).toBeLessThan(unfilteredCount);
   });
 
-  test('multiple filters with OR logic', async ({ page }) => {
+  test('multiple filters with AND logic', async ({ page }) => {
     // Set and capture first filter: side=BUY
     await setFilterViaApi(page, {
       side: { filterType: 'set', values: ['BUY'] },
@@ -275,29 +245,63 @@ test.describe('Filters Toolbar', () => {
     const buyOnlyCount = await getDisplayedRowCount(page);
 
     // Toggle off first filter before setting second
-    const btn1 = filterButtons(page).first();
+    const btn1 = filterToggleBtn(page, 0);
     await btn1.click();
     await page.waitForTimeout(500);
 
-    // Set and capture second filter: status=FILLED
+    // Set and capture second filter: a different column (e.g. venue)
     await setFilterViaApi(page, {
-      status: { filterType: 'set', values: ['FILLED'] },
+      venue: { filterType: 'set', values: ['NYSE'] },
     });
     await page.waitForTimeout(300);
     await clickAddFilter(page);
 
-    const filledOnlyCount = await getDisplayedRowCount(page);
+    const venueOnlyCount = await getDisplayedRowCount(page);
 
-    // Now activate both — should be OR logic showing more rows
+    // Now activate both — should be AND logic showing fewer rows
     await btn1.click(); // toggle BUY back on
     await page.waitForTimeout(500);
 
     const bothCount = await getDisplayedRowCount(page);
-    // OR of two filters should show >= max(buy, filled) rows
-    expect(bothCount).toBeGreaterThanOrEqual(Math.max(buyOnlyCount, filledOnlyCount));
+    // AND of two filters should show <= min(buy, venue) rows
+    expect(bothCount).toBeLessThanOrEqual(Math.min(buyOnlyCount, venueOnlyCount));
   });
 
-  test('right-click shows context menu', async ({ page }) => {
+  test('same-column set filters merge values with OR', async ({ page }) => {
+    // Capture filter for side=BUY
+    await setFilterViaApi(page, {
+      side: { filterType: 'set', values: ['BUY'] },
+    });
+    await switchToFilters(page);
+    await clickAddFilter(page);
+
+    const buyOnlyCount = await getDisplayedRowCount(page);
+    expect(buyOnlyCount).toBeGreaterThan(0);
+
+    // Toggle off first filter, set side=SELL, capture
+    const btn1 = filterToggleBtn(page, 0);
+    await btn1.click();
+    await page.waitForTimeout(500);
+
+    await setFilterViaApi(page, {
+      side: { filterType: 'set', values: ['SELL'] },
+    });
+    await page.waitForTimeout(300);
+    await clickAddFilter(page);
+
+    const sellOnlyCount = await getDisplayedRowCount(page);
+    expect(sellOnlyCount).toBeGreaterThan(0);
+
+    // Activate both — same column should OR (union values: BUY + SELL)
+    await btn1.click();
+    await page.waitForTimeout(500);
+
+    const bothCount = await getDisplayedRowCount(page);
+    // OR of BUY + SELL should show MORE rows than either alone
+    expect(bothCount).toBeGreaterThanOrEqual(Math.max(buyOnlyCount, sellOnlyCount));
+  });
+
+  test('hover shows edit and remove icons', async ({ page }) => {
     // Set a filter and capture
     await setFilterViaApi(page, {
       side: { filterType: 'set', values: ['BUY'] },
@@ -305,22 +309,19 @@ test.describe('Filters Toolbar', () => {
     await switchToFilters(page);
     await clickAddFilter(page);
 
-    // Right-click the toggle button
-    const btn = filterButtons(page).first();
-    await btn.click({ button: 'right' });
+    // Hover over the pill
+    const pill = filterPills(page).first();
+    await pill.hover();
     await page.waitForTimeout(300);
 
-    // Context menu should appear with Rename and Remove
-    const contextMenu = page.locator('.fixed.z-\\[10010\\]');
-    await expect(contextMenu).toBeVisible();
-
-    const rename = contextMenu.locator('button', { hasText: 'Rename' });
-    const remove = contextMenu.locator('button', { hasText: 'Remove' });
-    await expect(rename).toBeVisible();
-    await expect(remove).toBeVisible();
+    // Edit (Rename) and Remove icons should be visible
+    const renameBtn = pill.locator('button[title="Rename"]');
+    const removeBtn = pill.locator('button[title="Remove"]');
+    await expect(renameBtn).toBeVisible();
+    await expect(removeBtn).toBeVisible();
   });
 
-  test('rename updates label', async ({ page }) => {
+  test('rename updates label via hover icon', async ({ page }) => {
     // Set a filter and capture
     await setFilterViaApi(page, {
       side: { filterType: 'set', values: ['BUY'] },
@@ -328,18 +329,17 @@ test.describe('Filters Toolbar', () => {
     await switchToFilters(page);
     await clickAddFilter(page);
 
-    // Right-click and choose Rename
-    const btn = filterButtons(page).first();
-    await btn.click({ button: 'right' });
+    // Hover and click rename icon
+    const pill = filterPills(page).first();
+    await pill.hover();
     await page.waitForTimeout(300);
 
-    const contextMenu = page.locator('.fixed.z-\\[10010\\]');
-    const renameBtn = contextMenu.locator('button', { hasText: 'Rename' });
+    const renameBtn = pill.locator('button[title="Rename"]');
     await renameBtn.click();
     await page.waitForTimeout(300);
 
     // An input should appear
-    const input = page.locator('.gc-toolbar-content input');
+    const input = page.locator('.gc-filter-rename-input');
     await expect(input).toBeVisible();
 
     // Clear and type new name
@@ -347,13 +347,13 @@ test.describe('Filters Toolbar', () => {
     await input.press('Enter');
     await page.waitForTimeout(300);
 
-    // Verify the button now has the new label
-    const updatedBtn = filterButtons(page).first();
-    const title = await updatedBtn.getAttribute('title');
-    expect(title).toContain('My BUY Filter');
+    // Verify the pill now contains the new label text
+    const updatedPill = filterPills(page).first();
+    const text = await updatedPill.textContent();
+    expect(text).toContain('My BUY Filter');
   });
 
-  test('remove deletes button', async ({ page }) => {
+  test('remove deletes pill via hover icon', async ({ page }) => {
     // Set a filter and capture
     await setFilterViaApi(page, {
       side: { filterType: 'set', values: ['BUY'] },
@@ -361,20 +361,19 @@ test.describe('Filters Toolbar', () => {
     await switchToFilters(page);
     await clickAddFilter(page);
 
-    expect(await getFilterButtonCount(page)).toBe(1);
+    expect(await getFilterPillCount(page)).toBe(1);
 
-    // Right-click and choose Remove
-    const btn = filterButtons(page).first();
-    await btn.click({ button: 'right' });
+    // Hover and click remove icon
+    const pill = filterPills(page).first();
+    await pill.hover();
     await page.waitForTimeout(300);
 
-    const contextMenu = page.locator('.fixed.z-\\[10010\\]');
-    const removeBtn = contextMenu.locator('button', { hasText: 'Remove' });
+    const removeBtn = pill.locator('button[title="Remove"]');
     await removeBtn.click();
     await page.waitForTimeout(300);
 
-    // Button should be gone
-    expect(await getFilterButtonCount(page)).toBe(0);
+    // Pill should be gone
+    expect(await getFilterPillCount(page)).toBe(0);
   });
 
   test('save persists across reload', async ({ page }) => {
@@ -385,10 +384,10 @@ test.describe('Filters Toolbar', () => {
     await switchToFilters(page);
     await clickAddFilter(page);
 
-    expect(await getFilterButtonCount(page)).toBe(1);
+    expect(await getFilterPillCount(page)).toBe(1);
 
-    // Click Save button (last button with Save icon in toolbar content)
-    const saveBtn = page.locator('.gc-toolbar-content button').last();
+    // Click Save button (last icon btn in filters actions)
+    const saveBtn = page.locator('.gc-filters-icon-btn').last();
     await saveBtn.click();
     await page.waitForTimeout(500);
 
@@ -403,6 +402,6 @@ test.describe('Filters Toolbar', () => {
     await waitForGrid(page);
     await switchToFilters(page);
 
-    expect(await getFilterButtonCount(page)).toBe(1);
+    expect(await getFilterPillCount(page)).toBe(1);
   });
 });
