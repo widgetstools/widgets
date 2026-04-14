@@ -1,20 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import type { ColDef } from 'ag-grid-community';
 import { themeQuartz } from 'ag-grid-community';
-import { MarketsGrid } from '@grid-customizer/markets-grid';
-import { Sun, Moon } from 'lucide-react';
+import { MarketsGrid, type ToolbarSlotConfig } from '@grid-customizer/markets-grid';
+import { Sun, Moon, Database } from 'lucide-react';
 
 import { generateOrders, type Order } from './data';
 
 // ─── AG-Grid Themes ─────────────────────────────────────────────────────────
 
 const sharedParams = {
-  fontFamily: "'JetBrains Mono', Menlo, monospace",
-  fontSize: 11,
-  headerFontSize: 10,
+  fontFamily: "'JetBrains Mono', monospace",
+  fontSize: 11,       // primitives.typography.fontSize.sm (11px)
+  headerFontSize: 10,  // primitives.typography.fontSize.xs + 1 (9+1=10)
   cellHorizontalPaddingScale: 0.6,
   wrapperBorder: false,
-  columnBorder: true,
+  columnBorder: false,  // matches design-system/adapters/ag-grid.ts
   spacing: 6,
   borderRadius: 0,
   wrapperBorderRadius: 0,
@@ -25,10 +25,12 @@ const darkTheme = themeQuartz.withParams({
   backgroundColor: '#161a1e',
   foregroundColor: '#eaecef',
   headerBackgroundColor: '#1e2329',
+  headerForegroundColor: '#a0a8b4',
   oddRowBackgroundColor: '#161a1e',
   rowHoverColor: '#1e2329',
   selectedRowBackgroundColor: '#14b8a614',
   borderColor: '#313944',
+  rowBorderColor: '#31394499',
 });
 
 const lightTheme = themeQuartz.withParams({
@@ -36,10 +38,12 @@ const lightTheme = themeQuartz.withParams({
   backgroundColor: '#ffffff',
   foregroundColor: '#3b3b3b',
   headerBackgroundColor: '#f3f3f3',
-  oddRowBackgroundColor: '#ffffff',
+  headerForegroundColor: '#616161',
+  oddRowBackgroundColor: '#fafafa',
   rowHoverColor: '#f3f3f3',
   selectedRowBackgroundColor: '#0d948814',
   borderColor: '#e5e5e5',
+  rowBorderColor: '#e5e5e599',
 });
 
 // ─── Column Definitions (plain — no renderers, no formatters, no styles) ─────
@@ -83,6 +87,23 @@ export function App() {
 
   const theme = isDark ? darkTheme : lightTheme;
 
+  // Demo extra toolbars — placeholder content to showcase the switcher
+  const extraToolbars: ToolbarSlotConfig[] = [
+    {
+      id: 'data',
+      label: 'Data',
+      color: 'var(--bn-blue, #3da0ff)',
+      content: (
+        <div className="flex items-center gap-3 h-9 shrink-0 border-b border-border bg-card text-xs px-4">
+          <Database size={14} strokeWidth={1.75} style={{ color: 'var(--bn-blue)' }} />
+          <span style={{ color: 'var(--muted-foreground)', fontSize: 11 }}>
+            Data connections, live subscriptions, and field mappings — coming soon
+          </span>
+        </div>
+      ),
+    },
+  ];
+
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--background)' }}>
       <header style={{
@@ -90,11 +111,11 @@ export function App() {
         padding: '8px 16px', borderBottom: '1px solid var(--border)', background: 'var(--card)',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, fontFamily: "'Geist', sans-serif" }}>
+          <div style={{ fontSize: 13, fontWeight: 600, fontFamily: "var(--fi-sans, 'Geist', sans-serif)" }}>
             <span style={{ color: isDark ? '#2dd4bf' : '#0d9488' }}>Markets</span>
             <span style={{ color: 'var(--foreground)' }}>Grid</span>
           </div>
-          <span style={{ fontSize: 9, padding: '2px 6px', borderRadius: 4, background: isDark ? 'rgba(45,212,191,0.10)' : 'rgba(13,148,136,0.10)', color: isDark ? '#2dd4bf' : '#0d9488', fontFamily: '"JetBrains Mono", monospace', fontWeight: 500 }}>
+          <span style={{ fontSize: 9, padding: '1px 6px', borderRadius: 2, background: isDark ? 'rgba(45,212,191,0.10)' : 'rgba(13,148,136,0.10)', color: isDark ? '#2dd4bf' : '#0d9488', fontFamily: "var(--fi-mono, 'JetBrains Mono', monospace)", fontWeight: 500 }}>
             v0.1.0
           </span>
         </div>
@@ -125,6 +146,8 @@ export function App() {
           columnDefs={columnDefs}
           theme={theme}
           rowIdField="id"
+          showFiltersToolbar={true}
+          extraToolbars={extraToolbars}
           sideBar={{ toolPanels: ['columns', 'filters'] }}
           statusBar={{
             statusPanels: [
