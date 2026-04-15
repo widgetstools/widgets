@@ -689,7 +689,46 @@ aggrid-customization/
 
 ---
 
-## 16. Summary Statistics
+## 16. v2 Clean Rewrite (`@grid-customizer/core-v2` + `@grid-customizer/markets-grid-v2`)
+
+A parallel v2 platform lives alongside v1 on the `v2-rewrite` branch. v2 is a clean-room rewrite of the core + 5 essential modules that fixes four architectural seams that had accreted debt in v1. Consumer apps opt in per mount — v1 and v2 can coexist indefinitely, each with its own IndexedDB database and its own module registry.
+
+### What v2 delivers
+- **Single source of truth** — profile snapshots in IndexedDB (`gc-customizer-v2` db) are the only persisted form. The `gc-state:<id>` and `gc-grid:<id>` localStorage keys v1 used for caching are deleted on first v2 mount.
+- **Per-module schema versioning** — every module declares `schemaVersion: number` and an optional `migrate(raw, fromVersion)` hook. Snapshots are wrapped as `{ v: N, data: ... }` so a field rename in any module no longer corrupts every old profile.
+- **Explicit save API** — `profiles.saveActiveProfile()` is a direct function call. The `activeFiltersRef` mutation pattern and the `gc:save-all` window event are gone; the Save All button, the auto-save subscriber, and any other caller all converge on the one function.
+- **Auto-save** — a 300ms-debounced subscriber writes to the active profile snapshot on every store change. The Save All button is retained as a visible-confirmation flush, not a correctness requirement. E2E specs that required `await page.click('button[title*="Save all settings"]')` before every reload can drop those clicks.
+- **Enforced module dependencies + topological registration** — `core.registerModule(m)` throws if any declared dependency isn't yet registered, and registration order = a topological sort of the dependency graph.
+
+### v2 module scope (shipping in v2.0)
+- `general-settings`, `column-customization`, `conditional-styling`, `saved-filters`, `toolbar-visibility` (state-only; pills/stacked-toolbar UI pending in v2.1)
+
+Remaining modules (cell-flashing, calculated-columns, column-groups, column-templates, data-management, editing, entitlements, export-clipboard, expression-editor, named-queries, performance, profiles-panel, sort-filter, theming, undo-redo) stay at v1 and will be ported one at a time in v2.1 / v2.2. Consumer apps that need any deferred module continue mounting v1 until those ports land.
+
+### v2 demo mount
+`apps/demo` reads a `?v=2` query-string flag and conditionally mounts `MarketsGrid` from `@grid-customizer/markets-grid-v2` (with the v2 `DexieAdapter`) instead of the v1 equivalent. v1 remains the default at `/`; the v2 mount is opt-in at `/?v=2`.
+
+### v2 verification at ship-time
+- **Unit tests**: core-v2 Vitest suite — 142 tests passing.
+- **v1 regression guard**: all 24 in-scope E2E tests (profiles, default-profile, saved-filters-per-profile, toolbar-visibility) stay green against the v1 mount with v2 packages installed.
+- **v2 auto-save contract**: `e2e/v2-autosave.spec.ts` — 4 tests covering Default-profile auto-seed, user-profile persistence without Save All, filter-pill persistence without Save All, and Save All remaining available as a flush affordance.
+- **v2 perf parity**: `e2e/v2-perf.spec.ts` — v2 mount median 301ms vs v1 321ms (0.938 ratio, v2 is ~6% faster); v2 auto-save observable in IndexedDB within 97ms of the trigger (target 300ms debounce + 1s margin).
+
+### v2 code size
+| Package                              | LOC   |
+|--------------------------------------|-------|
+| `packages/core-v2` (core + 5 modules + tests) | ~3,800 |
+| `packages/markets-grid-v2`            | ~890   |
+| **Total v2**                          | **~4,700** |
+
+Within the planned 4,500–5,500 LOC envelope (v1 is 14,107 LOC across 20 modules).
+
+### See also
+- `docs/MIGRATION.md` — prop-by-prop guide for switching a consumer app from v1 to v2, including the one-shot legacy-key migration and the E2E selector compatibility matrix.
+
+---
+
+## 17. Summary Statistics
 
 | Category | Count |
 |----------|-------|
@@ -700,8 +739,10 @@ aggrid-customization/
 | Cell Renderers | 6 |
 | Shadcn UI Components | 11 |
 | CSS Variables | 50+ |
-| E2E Test Suites | 6 |
-| E2E Tests | 114 |
+| E2E Test Suites | 8 (6 v1 + v2-autosave + v2-perf) |
+| E2E Tests | 120 (114 v1 + 4 v2-autosave + 2 v2-perf) |
+| v2 Modules Shipped | 5 of 20 (remaining ported in v2.1 / v2.2) |
+| v2 Total LOC | ~4,700 (core-v2 3,800 + markets-grid-v2 890) |
 | Expression Token Types | 21 |
 | Named Query Operators | 15 |
 | Entitlement Types | 3 |

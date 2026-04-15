@@ -2,7 +2,9 @@ import React, { useState, useEffect, useMemo } from 'react';
 import type { ColDef } from 'ag-grid-community';
 import { themeQuartz } from 'ag-grid-community';
 import { MarketsGrid, type ToolbarSlotConfig } from '@grid-customizer/markets-grid';
+import { MarketsGrid as MarketsGridV2 } from '@grid-customizer/markets-grid-v2';
 import { DexieAdapter } from '@grid-customizer/core';
+import { DexieAdapter as DexieAdapterV2 } from '@grid-customizer/core-v2';
 import { Sun, Moon, Database } from 'lucide-react';
 
 import { generateOrders, type Order } from './data';
@@ -72,6 +74,14 @@ const columnDefs: ColDef<Order>[] = [
 
 // ─── App ─────────────────────────────────────────────────────────────────────
 
+// Read `?v=2` once at module load — switching versions requires a full reload
+// because each version owns its own AG-Grid module registration + storage.
+const useV2 = (() => {
+  try {
+    return new URLSearchParams(window.location.search).get('v') === '2';
+  } catch { return false; }
+})();
+
 export function App() {
   const [rowData] = useState(() => generateOrders(500));
   const [isDark, setIsDark] = useState(() => {
@@ -88,8 +98,10 @@ export function App() {
 
   const theme = isDark ? darkTheme : lightTheme;
 
-  // Persistent profile storage (IndexedDB) — enables the Profiles settings panel
+  // Persistent profile storage (IndexedDB) — enables the Profiles settings panel.
+  // v2 gets its own adapter instance (different Dexie database name under the hood).
   const storageAdapter = useMemo(() => new DexieAdapter(), []);
+  const storageAdapterV2 = useMemo(() => new DexieAdapterV2(), []);
 
   // Demo extra toolbars — placeholder content to showcase the switcher
   const extraToolbars: ToolbarSlotConfig[] = [
@@ -116,7 +128,9 @@ export function App() {
         padding: '6px 12px', borderBottom: '1px solid var(--border)', background: 'var(--card)',
         gap: 12,
       }}>
-        <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>{rowData.length} orders</span>
+        <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>
+          {rowData.length} orders{useV2 ? ' • v2' : ''}
+        </span>
         <button
           onClick={() => setIsDark(!isDark)}
           style={{
@@ -135,23 +149,42 @@ export function App() {
       </header>
 
       <div style={{ flex: 1 }}>
-        <MarketsGrid
-          gridId="demo-blotter"
-          rowData={rowData}
-          columnDefs={columnDefs}
-          theme={theme}
-          rowIdField="id"
-          showFiltersToolbar={true}
-          storageAdapter={storageAdapter}
-          extraToolbars={extraToolbars}
-          sideBar={{ toolPanels: ['columns', 'filters'] }}
-          statusBar={{
-            statusPanels: [
-              { statusPanel: 'agTotalAndFilteredRowCountComponent', align: 'left' },
-              { statusPanel: 'agSelectedRowCountComponent', align: 'left' },
-            ],
-          }}
-        />
+        {useV2 ? (
+          <MarketsGridV2
+            gridId="demo-blotter-v2"
+            rowData={rowData}
+            columnDefs={columnDefs}
+            theme={theme}
+            rowIdField="id"
+            showFiltersToolbar={true}
+            storageAdapter={storageAdapterV2}
+            sideBar={{ toolPanels: ['columns', 'filters'] }}
+            statusBar={{
+              statusPanels: [
+                { statusPanel: 'agTotalAndFilteredRowCountComponent', align: 'left' },
+                { statusPanel: 'agSelectedRowCountComponent', align: 'left' },
+              ],
+            }}
+          />
+        ) : (
+          <MarketsGrid
+            gridId="demo-blotter"
+            rowData={rowData}
+            columnDefs={columnDefs}
+            theme={theme}
+            rowIdField="id"
+            showFiltersToolbar={true}
+            storageAdapter={storageAdapter}
+            extraToolbars={extraToolbars}
+            sideBar={{ toolPanels: ['columns', 'filters'] }}
+            statusBar={{
+              statusPanels: [
+                { statusPanel: 'agTotalAndFilteredRowCountComponent', align: 'left' },
+                { statusPanel: 'agSelectedRowCountComponent', align: 'left' },
+              ],
+            }}
+          />
+        )}
       </div>
     </div>
   );
